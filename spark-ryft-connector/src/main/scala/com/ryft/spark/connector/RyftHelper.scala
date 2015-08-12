@@ -10,32 +10,51 @@ object RyftHelper {
   private lazy val a2mUrl = config.getString("ryft.url.a2m")
   private lazy val n2zUrl = config.getString("ryft.url.n2z")
 
-  /**
-   * Ryft REST fuzzy hamming query
-   *
-   * @param url Base URI for Ryft REST service
-   * @param query Query text
-   * @param files Files for search
-   * @param surrounding Width when generating results. For example, a value of 2 means that 2
-      characters before and after a search match will be included with data result
-   * @param fuzziness - Specify the fuzzy search distance [0..255]
-   * @return Ryft REST fuzzy hamming query
-   */
-  def prepareFuzzyQuery(url: String,
-                        query: String,
+  def splitToPartitions(queries: List[String]) = {
+    queries.map(q => (choosePartition(q), q))
+      .groupBy(_._1)
+      .mapValues(_.map(_._2))
+  }
+
+  def fuzzyQueries(queries: List[String],
+                 files: List[String],
+                 surrounding: Int,
+                 fuzziness: Byte): List[(String,String)] = {
+    queries.map(query => {
+      val queryWithQuotes = "\"" + query + "\""
+      val queryPart = new StringBuilder(s"/search/" +
+        s"fuzzy-hamming/?query=(RAW_TEXT%20CONTAINS$queryWithQuotes)")
+      
+      for(f <- files) {
+        queryPart.append(s"&files=$f")
+      }
+      queryPart.append(s"&surrounding=$surrounding")
+      queryPart.append(s"&fuzziness=$fuzziness")
+      
+      (query, choosePartition(query)+queryPart.toString)
+    })
+  }
+  
+  def fuzzyComplexQuery(queries: List[String],
+                        endpoint: String,
                         files: List[String],
                         surrounding: Int,
                         fuzziness: Byte): String = {
+    val queriesOR = (for ((q, i) <- queries.zipWithIndex)
+      yield {
+        val queryWithQuotes = "\"" + q + "\""
+        val rawTextQuery = s"(RAW_TEXT%20CONTAINS$queryWithQuotes)"
+        if (i+1 != queries.length) rawTextQuery+"OR"
+        else rawTextQuery
+      }).mkString("")
 
-    //FIXME: \" escape does not work with string interpolation
-    val queryWithQuotes = "\""+query+"\""
-    val queryPart = new StringBuilder(s"/?query=(RAW_TEXT%20CONTAINS$queryWithQuotes)")
+    val queryPart = new StringBuilder(s"/search/fuzzy-hamming/?query=$queriesOR")
     for(f <- files) {
       queryPart.append(s"&files=$f")
     }
     queryPart.append(s"&surrounding=$surrounding")
     queryPart.append(s"&fuzziness=$fuzziness")
-    url+queryPart
+    endpoint+queryPart.toString
   }
 
   /**
@@ -43,14 +62,12 @@ object RyftHelper {
    * @param text Search query
    * @return Ryft URI
    */
-  //TODO: Possible to add few partition strategies and customize them using properties
-  //FIXME: Implemented simple logic, search query should start with letter of Eng alphabet
   def choosePartition(text: String): String = {
-    a2mUrl
-//    if(('a' to 'm').contains(text.toLowerCase.charAt(0))) a2mUrl
-//    if(('n' to 'z').contains(text.toLowerCase.charAt(0))) n2zUrl
+    //FIXME: return not scala aproach
+    if(('a' to 'm').indexOf(text.toLowerCase.charAt(0)) != -1) return a2mUrl
+    if(('n' to 'z').indexOf(text.toLowerCase.charAt(0)) != -1) return n2zUrl
 
-//    throw new RuntimeException(("Search query starts with an unknown character: '%c'. " +
-//      "Unable to choose partition").format(text(0)))
+    throw new RuntimeException(("Search query starts with an unknown character: '%c'. " +
+      "Unable to choose partition").format(text(0)))
   }
 }

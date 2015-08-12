@@ -4,16 +4,12 @@ import java.io.{BufferedWriter, FileWriter}
 
 import org.apache.commons.codec.binary.Base64
 import org.apache.spark.{SparkContext, SparkConf}
-
 import org.json4s.DefaultFormats
 import org.json4s.native.JsonMethods._
 
 import scala.util.Try
 
-/**
- * Demonstrates exact search using fuzzy = 0
- */
-object SimpleExample extends App {
+object SimplePairRDDExample extends App {
   implicit val formats = DefaultFormats
 
   def toSampleObject(s: String): SampleObject = {
@@ -36,23 +32,22 @@ object SimpleExample extends App {
 
   val sc = new SparkContext(sparkConf)
 
-  val fw = new FileWriter("/result.log", true)
+  val fw = new FileWriter("/result1.log", true)
   val out = new BufferedWriter(fw)
 
-  val ryftRDD = sc.ryftRDD[SampleObject](List("Jones","Thomas"),
+  val ryftRDD = sc.ryftPairRDD[SampleObject](List("Jones","Thomas"),
     List("passengers.txt"), 10, 0, toSampleObject)
 
-  ryftRDD.foreach(f => {
-    if (f.nonEmpty) {
+  ryftRDD.foreach(rdd => {
+    if (rdd._2.nonEmpty) {
       //FIXME: synchronized file writing only for example, need to do it in a better way
       synchronized {
-        out.write(f.toString)
+        out.write(rdd._1+": ")
+        out.write(rdd._2.toString)
         out.newLine()
         out.flush()
       }
     }
   })
-
-  val arr  = ryftRDD.collect()
 
 }
