@@ -1,6 +1,12 @@
-package com.ryft.spark.connector
+package com.ryft.spark.connector.util
 
+import com.ryft.spark.connector.domain.RyftData
 import com.typesafe.config.ConfigFactory
+import org.apache.commons.codec.binary.Base64
+import org.json4s.DefaultFormats
+import org.json4s.native.JsonMethods._
+
+import scala.util.Try
 
 /**
 * Provides helper functions specific for Ryft
@@ -23,7 +29,7 @@ object RyftHelper {
     queries.map(query => {
       val queryWithQuotes = "\"" + query + "\""
       val queryPart = new StringBuilder(s"/search/" +
-        s"fuzzy-hamming/?query=(RAW_TEXT%20CONTAINS$queryWithQuotes)")
+        s"?query=(RAW_TEXT%20CONTAINS$queryWithQuotes)")
       
       for(f <- files) {
         queryPart.append(s"&files=$f")
@@ -35,26 +41,23 @@ object RyftHelper {
     })
   }
   
-  def fuzzyComplexQuery(queries: List[String],
-                        endpoint: String,
-                        files: List[String],
-                        surrounding: Int,
-                        fuzziness: Byte): String = {
-    val queriesOR = (for ((q, i) <- queries.zipWithIndex)
-      yield {
-        val queryWithQuotes = "\"" + q + "\""
-        val rawTextQuery = s"(RAW_TEXT%20CONTAINS$queryWithQuotes)"
-        if (i+1 != queries.length) rawTextQuery+"OR"
-        else rawTextQuery
-      }).mkString("")
+  def mapToRyftData(line: String): Option[RyftData] = {
+    implicit val formats = DefaultFormats
 
-    val queryPart = new StringBuilder(s"/search/fuzzy-hamming/?query=$queriesOR")
-    for(f <- files) {
-      queryPart.append(s"&files=$f")
+    val open = line.indexOf('{')
+    if (open == -1) None
+    else {
+      val close = line.lastIndexOf('}')
+      val jsonLine = line.substring(open, close)
+
+      val ryftDataOption = Try(parse(jsonLine).extract[RyftData])
+      if (ryftDataOption.isSuccess) {
+        val ryftData = ryftDataOption.get
+        Some(new RyftData(ryftData.file, ryftData.offset,
+                          ryftData.length, ryftData.fuzziness,
+                          new String(Base64.decodeBase64(ryftData.data))))
+      } else None
     }
-    queryPart.append(s"&surrounding=$surrounding")
-    queryPart.append(s"&fuzziness=$fuzziness")
-    endpoint+queryPart.toString
   }
 
   /**
@@ -62,12 +65,10 @@ object RyftHelper {
    * @param text Search query
    * @return Ryft URI
    */
-  def choosePartition(text: String): String = {
-    //FIXME: return not scala aproach
-    if(('a' to 'm').indexOf(text.toLowerCase.charAt(0)) != -1) return a2mUrl
-    if(('n' to 'z').indexOf(text.toLowerCase.charAt(0)) != -1) return n2zUrl
-
-    throw new RuntimeException(("Search query starts with an unknown character: '%c'. " +
+  private def choosePartition(text: String): String = {
+    if(('a' to 'm').indexOf(text.toLowerCase.charAt(0)) != -1) a2mUrl
+    else if(('n' to 'z').indexOf(text.toLowerCase.charAt(0)) != -1) n2zUrl
+    else throw new RuntimeException(("Search query starts with an unknown character: '%c'. " +
       "Unable to choose partition").format(text(0)))
   }
 }

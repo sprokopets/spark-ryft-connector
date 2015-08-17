@@ -18,6 +18,7 @@ lazy val commonSettings = Seq(
     "org.scalaj"              %  "scalaj-http_2.11"             % scalajVersion,
     "ch.qos.logback"          %  "logback-classic"              % logbackVersion,
     "org.json4s"              %  "json4s-native_2.11"           % json4sVersion,
+    "org.json4s"              %  "json4s-core_2.11"             % json4sVersion,
     "org.twitter4j"           %  "twitter4j-stream"             % twitter4jVersion
   )}
 )

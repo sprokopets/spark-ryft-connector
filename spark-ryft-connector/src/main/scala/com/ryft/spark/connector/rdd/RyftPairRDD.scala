@@ -6,6 +6,10 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.{TaskContext, Partition, SparkContext}
 import org.apache.spark.rdd.RDD
 
+import com.ryft.spark.connector.util.JsonHelper
+import org.json4s.JsonAST.JObject
+import org.json4s.JsonDSL.WithBigDecimal._
+
 import scala.io.Source
 import scala.reflect.ClassTag
 
@@ -13,8 +17,14 @@ class RyftPairRDDPartition(val idx: Int,
                            val key: String,
                            val query: String) extends Partition {
   override def index: Int = idx
+  override def toString: String = {
+    JsonHelper.toJsonPretty(
+      JObject(
+        "idx" -> idx,
+        "key" -> key,
+        "query" -> query
+  ))}
 }
-
 
 class RyftPairRDDPartitioner {
   def partitions(queries: Iterable[(String,String)]): Array[Partition] = {
@@ -24,22 +34,24 @@ class RyftPairRDDPartitioner {
   }
 }
 
-class RyftPairRDD [T: ClassTag](sc: SparkContext,
+case class RyftPairRDD [T: ClassTag](@transient sc: SparkContext,
                                 queries: Iterable[(String,String)],
-                                mapLine: String => T)
+                                mapLine: String => Option[T])
   extends RDD[(String,T)](sc, Nil) {
 
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[(String, T)] = {
     val partition = split.asInstanceOf[RyftPairRDDPartition]
     val is = new URL(partition.query).openConnection().getInputStream
-
-    val lines = Source.fromInputStream(is).getLines()
     val key = partition.key
+    val lines = Source.fromInputStream(is)
+      .getLines()
+      .filter(l => mapLine(l).nonEmpty)
 
     new Iterator[(String,T)] {
-      override def next() = {
-        (key, mapLine(lines.next()))
+      override def next(): (String,T) = {
+        val line = mapLine(lines.next())
+        (key, line.get)
       }
 
       override def hasNext: Boolean = {
@@ -56,7 +68,7 @@ class RyftPairRDD [T: ClassTag](sc: SparkContext,
     val partitioner = new RyftPairRDDPartitioner
     val partitions = partitioner.partitions(queries)
     logDebug(s"Created total ${partitions.length} partitions.")
-    logTrace("Partitions: \n" + partitions.mkString("\n"))
+    logDebug("Partitions: \n" + partitions.mkString("\n"))
     partitions
   }
 }
