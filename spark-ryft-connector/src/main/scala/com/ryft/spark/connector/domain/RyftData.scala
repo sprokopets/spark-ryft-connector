@@ -1,8 +1,8 @@
 package com.ryft.spark.connector.domain
 
-import com.ryft.spark.connector.util.JsonHelper
-import org.json4s.JsonAST.JObject
-import org.json4s.JsonDSL.WithBigDecimal._
+//import com.ryft.spark.connector.util.JsonHelper
+//import org.json4s.JsonAST.JObject
+//import org.json4s.JsonDSL.WithBigDecimal._
 
 /**
  * Represents pojo Ryft REST returns
@@ -21,13 +21,13 @@ case class RyftData (file: String,
 
   def nonEmpty = data.nonEmpty
 
-  override def toString: String = {
-    JsonHelper.toJsonPretty(
-      JObject(
-        "file"      -> file,
-        "offset"    -> offset,
-        "length"    -> length,
-        "fuzziness" -> fuzziness,
-        "data"      -> data
-  ))}
+//  override def toString: String = {
+//    JsonHelper.toJsonPretty(
+//      JObject(
+//        "file"      -> file,
+//        "offset"    -> offset,
+//        "length"    -> length,
+//        "fuzziness" -> fuzziness,
+//        "data"      -> data
+//  ))}
 }

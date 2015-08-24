@@ -1,14 +1,14 @@
 package com.ryft.spark.connector.rdd
 
-import java.net.URL
+import java.net.{InetAddress, URL}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.{TaskContext, Partition, SparkContext}
 import org.apache.spark.rdd.RDD
 
-import com.ryft.spark.connector.util.JsonHelper
-import org.json4s.JsonAST.JObject
-import org.json4s.JsonDSL.WithBigDecimal._
+//import com.ryft.spark.connector.util.JsonHelper
+//import org.json4s.JsonAST.JObject
+//import org.json4s.JsonDSL.WithBigDecimal._
 
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -17,13 +17,13 @@ class RyftPairRDDPartition(val idx: Int,
                            val key: String,
                            val query: String) extends Partition {
   override def index: Int = idx
-  override def toString: String = {
-    JsonHelper.toJsonPretty(
-      JObject(
-        "idx" -> idx,
-        "key" -> key,
-        "query" -> query
-  ))}
+//  override def toString: String = {
+//    JsonHelper.toJsonPretty(
+//      JObject(
+//        "idx" -> idx,
+//        "key" -> key,
+//        "query" -> query
+//  ))}
 }
 
 class RyftPairRDDPartitioner {

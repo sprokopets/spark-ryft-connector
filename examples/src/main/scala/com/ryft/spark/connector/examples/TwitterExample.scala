@@ -9,14 +9,8 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.{SparkContext, SparkConf}
 import org.json4s.DefaultFormats
 
-import java.util.concurrent.Executors
-
-import scala.concurrent.{ExecutionContext, Future}
-
 object TwitterExample extends App {
   implicit val formats = DefaultFormats
-  implicit val ec = ExecutionContext.fromExecutor(
-    Executors.newFixedThreadPool(5))
 
   System.setProperty("twitter4j.oauth.consumerKey", "")
   System.setProperty("twitter4j.oauth.consumerSecret", "")
@@ -24,13 +18,12 @@ object TwitterExample extends App {
   System.setProperty("twitter4j.oauth.accessTokenSecret", "")
 
   val sparkConf = new SparkConf()
-    .setMaster("local[2]")
     .setAppName("TwitterSportTag")
 
   val sc = new SparkContext(sparkConf)
   val ssc = new StreamingContext(sc, Seconds(10))
 
-  val fw = new FileWriter("/result.log", true)
+  val fw = new FileWriter(args(0), true)
   val out = new BufferedWriter(fw)
 
   val stream = TwitterUtils.createStream(ssc, None, List("#football"), StorageLevel.MEMORY_AND_DISK_SER_2)
@@ -55,6 +48,10 @@ object TwitterExample extends App {
 
       val ryftRDD = sc.ryftPairRDD[RyftData](tags, List("reddit/*"), 10, 0, RyftHelper.mapToRyftData)
       val count = ryftRDD.countByKey()
+
+      println(count.mkString("\n"))
+      println("---------")
+      println()
 
       out.write(count.mkString("\n"))
       out.newLine()

@@ -6,20 +6,19 @@ import com.ryft.spark.connector.util.RyftHelper
 import org.apache.spark.{SparkContext, SparkConf}
 
 object SimplePairRDDExample extends App {
-
   val sparkConf = new SparkConf()
-    .setMaster("local[2]")
-    .setAppName("TwitterSportTag")
+    .setAppName("SimplePairRDDExample")
 
   val sc = new SparkContext(sparkConf)
 
-  val fw = new FileWriter("/result.log", true)
+  val fw = new FileWriter(args(0), true)
   val out = new BufferedWriter(fw)
 
-  val ryftRDD = sc.ryftPairRDD[RyftData](List("Jones","Thomas", "Alex", "Victor", "SomethingDefinitlyNotExists"),
+  val ryftRDD = sc.ryftPairRDD[RyftData](List("Jones","alex","andrey","borys","anna"),
     List("reddit/*"), 10, 0, RyftHelper.mapToRyftData)
 
   val count = ryftRDD.countByKey()
+  println("\n\ncount: "+count.mkString("\n"))
   out.write("Count: \n"+count.mkString("\n"))
   out.newLine()
   out.flush()

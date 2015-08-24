@@ -32,8 +32,8 @@ class PartitioningHelper {
       // we have to use all partitions with no pattern (metadata) (by default)
       // or pattern matches search query
       pattern.isEmpty || {
-        val Pattern = pattern.r
-        query.head match {
+        val Pattern = pattern.r.unanchored
+        query match {
           case Pattern(_) => true
           case _          => false
         }
