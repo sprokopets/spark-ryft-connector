@@ -1,7 +1,6 @@
 package com.ryft.spark.connector.util
 
 import com.ryft.spark.connector.domain.RyftData
-import com.typesafe.config.ConfigFactory
 import org.apache.commons.codec.binary.Base64
 import org.json4s.DefaultFormats
 import org.json4s.native.JsonMethods._
@@ -15,7 +14,7 @@ object RyftHelper {
   def fuzzyQueries(queries: List[String],
                  files: List[String],
                  surrounding: Int,
-                 fuzziness: Byte): List[(String,String)] = {
+                 fuzziness: Byte): List[(String,String,Seq[String])] = {
     queries.flatMap(query => {
       val queryWithQuotes = "\"" + query + "\""
       val queryPart = new StringBuilder(s"/search/" +
@@ -29,7 +28,7 @@ object RyftHelper {
 
       val partitions = PartitioningHelper.choosePartitions(query)
       val fuzzyQueries = partitions.map(p => {
-        (query, p.url+queryPart.toString)
+        (query, p.endpoint+queryPart.toString, p.preferredLocations)
       })
 
       fuzzyQueries

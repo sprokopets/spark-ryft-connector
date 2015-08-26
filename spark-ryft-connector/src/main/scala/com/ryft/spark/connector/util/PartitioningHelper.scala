@@ -1,44 +1,25 @@
 package com.ryft.spark.connector.util
 
-import com.typesafe.config.{ConfigObject, ConfigValue, ConfigFactory, Config}
-import scala.collection.JavaConverters._
-import java.util.Map.Entry
+import com.ryft.spark.connector.config.ConfigHolder
+import com.ryft.spark.connector.domain.RyftPartition
 
-
-case class RyftPartition(url: String, pattern: String)
-
-class PartitioningHelper {
-  private lazy val config = ConfigFactory.load().getConfig("spark-ryft-connector")
-  private lazy val partitions: Map[String, String] = {
-    val list: Iterable[ConfigObject] = config.getObjectList("partitions").asScala
-    (for {
-      item: ConfigObject <- list
-      entry: Entry[String, ConfigValue] <- item.entrySet().asScala
-      url = entry.getKey
-      pattern = entry.getValue.unwrapped().toString
-    } yield (url, pattern)).toMap
-  }
-
+object PartitioningHelper {
   /**
    * Chooses partitions, based on specified query.
    * If partition metadata does not exist it will be added to result list.
    * Assumed that partitions with no metadata should be used by default.
    *
    * @param query Query string
-   * @return List of partitions
+   * @return Seq of partitions
    */
   def choosePartitions(query: String): List[RyftPartition] = {
-    partitions.filter({case (url, pattern) =>
+    val partitions = ConfigHolder.getConf
+    partitions.filter({ryft =>
       // we have to use all partitions with no pattern (metadata) (by default)
       // or pattern matches search query
-      pattern.isEmpty || {
-        val Pattern = pattern.r.unanchored
-        query match {
-          case Pattern(_) => true
-          case _          => false
-        }
-    }}).map({case (url, pattern) => RyftPartition(url, pattern)}).toList
+      ryft.pattern.isEmpty ||
+        //FIXME: regex not matches whole query
+        query.head.toString.matches(ryft.pattern.replaceAll("\"", ""))
+    })
   }
 }
-
-object PartitioningHelper extends PartitioningHelper

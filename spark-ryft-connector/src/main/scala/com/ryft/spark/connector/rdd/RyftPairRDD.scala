@@ -15,7 +15,8 @@ import scala.reflect.ClassTag
 
 class RyftPairRDDPartition(val idx: Int,
                            val key: String,
-                           val query: String) extends Partition {
+                           val query: String,
+                           val preferredLocations: Seq[String]) extends Partition {
   override def index: Int = idx
 //  override def toString: String = {
 //    JsonHelper.toJsonPretty(
@@ -27,15 +28,15 @@ class RyftPairRDDPartition(val idx: Int,
 }
 
 class RyftPairRDDPartitioner {
-  def partitions(queries: Iterable[(String,String)]): Array[Partition] = {
+  def partitions(queries: Iterable[(String,String, Seq[String])]): Array[Partition] = {
     (for((query,i) <- queries.zipWithIndex) yield {
-      new RyftPairRDDPartition(i, query._1, query._2)
+      new RyftPairRDDPartition(i, query._1, query._2, query._3)
     }).toArray[Partition]
   }
 }
 
 case class RyftPairRDD [T: ClassTag](@transient sc: SparkContext,
-                                queries: Iterable[(String,String)],
+                                queries: Iterable[(String,String,Seq[String])],
                                 mapLine: String => Option[T])
   extends RDD[(String,T)](sc, Nil) {
 
@@ -70,5 +71,11 @@ case class RyftPairRDD [T: ClassTag](@transient sc: SparkContext,
     logDebug(s"Created total ${partitions.length} partitions.")
     logDebug("Partitions: \n" + partitions.mkString("\n"))
     partitions
+  }
+
+  override protected def getPreferredLocations(split: Partition): Seq[String] = {
+    val partition = split.asInstanceOf[RyftPairRDDPartition]
+    logDebug("Preferred locations for partition: \n"+partition.preferredLocations.mkString("\n"))
+    partition.preferredLocations
   }
 }
