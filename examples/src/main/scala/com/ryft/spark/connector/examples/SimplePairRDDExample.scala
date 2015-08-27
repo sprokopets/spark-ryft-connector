@@ -16,8 +16,8 @@ object SimplePairRDDExample extends App {
   val fw = new FileWriter(args(0), true)
   val out = new BufferedWriter(fw)
 
-  val ryftRDD = sc.ryftPairRDD[RyftData](List("jones","alex","andrey", "bob", "candy", "helen", "hanna",
-    "borys","anna", "albert", "alice"),
+  val ryftRDD = sc.ryftPairRDD[RyftData](List("jones","alex","andrey", "bob", "candy",
+    "peter", "sam", "pavel", "rachel", "nolan"),
     List("reddit/*"), 10, 0, RyftHelper.mapToRyftData)
 
   val count = ryftRDD.countByKey()

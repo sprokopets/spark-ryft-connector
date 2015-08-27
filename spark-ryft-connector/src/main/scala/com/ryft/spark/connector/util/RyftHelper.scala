@@ -17,7 +17,7 @@ object RyftHelper {
                  fuzziness: Byte): List[(String,String,Seq[String])] = {
     queries.flatMap(query => {
       val queryWithQuotes = "\"" + query + "\""
-      val queryPart = new StringBuilder(s"/search/" +
+      val queryPart = new StringBuilder(s"/search" +
         s"?query=(RAW_TEXT%20CONTAINS$queryWithQuotes)")
       
       for(f <- files) {
