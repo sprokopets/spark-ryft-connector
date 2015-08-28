@@ -42,7 +42,9 @@ object RyftHelper {
     if (open == -1) None
     else {
       val close = line.lastIndexOf('}')
-      val jsonLine = line.substring(open, close)
+      val jsonLine =
+        if (close+1 >= line.length) line.substring(open)
+        else line.substring(open, close)
 
       val ryftDataOption = Try(parse(jsonLine).extract[RyftData])
       if (ryftDataOption.isSuccess) {
