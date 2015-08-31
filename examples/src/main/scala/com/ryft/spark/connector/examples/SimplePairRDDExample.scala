@@ -35,7 +35,6 @@ import com.ryft.spark.connector._
 
 object SimplePairRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
-    .setMaster("local[2]")
     .setAppName("SimplePairRDDExample")
     .set("spark.locality.wait", "120s")
     .set("spark.locality.wait.node", "120s")
