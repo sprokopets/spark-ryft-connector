@@ -28,34 +28,47 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector
 
-import com.ryft.spark.connector.domain.RyftMetaInfo
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery
-import org.apache.spark.{SparkContext, SparkConf}
+import com.ryft.spark.connector.domain.query._
 import com.ryft.spark.connector._
 
-object StreamExample extends App {
-  val lines = scala.io.Source.fromURL(args(0)).getLines().toSeq
+import scala.collection.mutable
 
-  val sparkConf = new SparkConf()
-    .setAppName("StreamExample")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
+class RyftQueryBuilder(query: String,
+                       inputSpecifier: InputSpecifier,
+                       logicalOperator: LogicalOperator,
+                       relationalOperator: RelationalOperator) {
 
-  val sc = new SparkContext(sparkConf)
-  val r = scala.util.Random
+  private val recordQueries = mutable.ListBuffer.empty[RyftRecord]
 
-  val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
-  while(true) {
-    val words = (0 until 5).map(_ => {
-      lines(r.nextInt(lines.size))
-    }).toList
-
-    val queries = words.map(w => SimpleRyftQuery(List(w)))
-    val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
-    val count = ryftRDD.countByKey()
-    println("\n\ncount: "+count.mkString("\n"))
-    Thread.sleep(10000)
+  def this(query: String,
+          inputSpecifier: InputSpecifier,
+          relationalOperator: RelationalOperator) = {
+    this(query, inputSpecifier, empty, relationalOperator)
+    recordQueries += new RyftRecord(query, inputSpecifier, empty, relationalOperator)
   }
+
+  def and(query: String,
+          inputSpecifier: InputSpecifier,
+          relationalOperator: RelationalOperator) = {
+    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.and, relationalOperator)
+    this
+  }
+
+  def or(query: String,
+          inputSpecifier: InputSpecifier,
+          relationalOperator: RelationalOperator) = {
+    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.or, relationalOperator)
+    this
+  }
+
+  def xor(query: String,
+          inputSpecifier: InputSpecifier,
+          relationalOperator: RelationalOperator) = {
+    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.xor, relationalOperator)
+    this
+  }
+
+  def build = new RyftRecordQuery(recordQueries.toList)
 }

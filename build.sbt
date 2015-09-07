@@ -41,17 +41,16 @@ lazy val commonSettings = Seq(
     val twitter4jVersion  = "3.0.3"
     val sprayJson         = "1.3.2"
     Seq(
-      "com.typesafe.akka"       %  "akka-actor_2.10"              % akkaVersion   % "provided",
-      "com.typesafe.akka"       %  "akka-slf4j_2.10"              % akkaVersion   % "provided",
-      "org.apache.spark"        %  "spark-core_2.10"              % sparkVersion  % "provided",
-      "org.apache.spark"        %  "spark-streaming_2.10"         % sparkVersion  % "provided",
+      "com.typesafe.akka"       %  "akka-actor_2.10"              % akkaVersion,
+      "org.apache.spark"        %  "spark-core_2.10"              % sparkVersion,
+      "org.apache.spark"        %  "spark-streaming_2.10"         % sparkVersion,
       "org.apache.spark"        %  "spark-streaming-twitter_2.10" % sparkVersion,
       "org.scalaj"              %  "scalaj-http_2.10"             % scalajVersion,
       "ch.qos.logback"          %  "logback-classic"              % logbackVersion,
       "org.json4s"              %  "json4s-native_2.10"           % json4sVersion,
       "org.json4s"              %  "json4s-core_2.10"             % json4sVersion,
       "org.twitter4j"           %  "twitter4j-stream"             % twitter4jVersion,
-      "io.spray"                %   "spray-json_2.10"             % sprayJson
+      "io.spray"                %  "spray-json_2.10"              % sprayJson
     )}
 )
 
@@ -60,6 +59,22 @@ lazy val examplesSettings = Seq(
     val twitter4jVersion  = "3.0.3"
     Seq(
       "org.twitter4j"           %  "twitter4j-stream"             % twitter4jVersion
+    )}
+)
+
+lazy val sparkRyftConnectorSettings = Seq(
+  libraryDependencies ++= {
+    val jacksonVersion    = "2.4.4"
+    val scalaTestVersion  = "3.0.0-M7"
+    val sprayVersion      = "1.3.3"
+    val specs2Version     = "2.4.15"
+    Seq(
+      "com.fasterxml.jackson.module"  % "jackson-module-scala_2.10" % jacksonVersion,
+      "org.scalatest"                 % "scalatest_2.10"            % scalaTestVersion % "test",
+      "io.spray"                      % "spray-can_2.10"            % sprayVersion     % "test",
+      "io.spray"                      % "spray-routing_2.10"        % sprayVersion     % "test",
+      "io.spray"                      % "spray-testkit_2.10"        % sprayVersion     % "test",
+      "org.specs2"                    % "specs2-core_2.10"          % specs2Version    % "test"
     )}
 )
 
@@ -78,6 +93,7 @@ lazy val root = (project in file(".")).
 
 lazy val sparkRyftConnector = (project in file("spark-ryft-connector")).
   settings(commonSettings: _*).
+  settings(sparkRyftConnectorSettings: _*).
   settings(
     name                := "spark-ryft-connector"
   )

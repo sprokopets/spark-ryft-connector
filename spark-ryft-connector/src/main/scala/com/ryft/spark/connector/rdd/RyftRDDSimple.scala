@@ -28,34 +28,52 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector.rdd
 
-import com.ryft.spark.connector.domain.RyftMetaInfo
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery
-import org.apache.spark.{SparkContext, SparkConf}
-import com.ryft.spark.connector._
+import java.net.URL
 
-object StreamExample extends App {
-  val lines = scala.io.Source.fromURL(args(0)).getLines().toSeq
+import com.fasterxml.jackson.core.JsonFactory
+import com.ryft.spark.connector.domain.RyftData
+import com.ryft.spark.connector.util.{SimpleJsonParser, RyftHelper}
+import org.apache.spark.{TaskContext, Partition, SparkContext}
+import org.apache.spark.annotation.DeveloperApi
 
-  val sparkConf = new SparkConf()
-    .setAppName("StreamExample")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
+import scala.io.Source
+import scala.reflect.ClassTag
 
-  val sc = new SparkContext(sparkConf)
-  val r = scala.util.Random
+class RyftRDDSimple[T: ClassTag](@transient sc: SparkContext,
+                                    queries: Iterable[(String,String,Seq[String])],
+                                    transform: Map[String, Any] => T)
+  extends RyftRDD[T, T](sc, queries, transform) {
 
-  val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
-  while(true) {
-    val words = (0 until 5).map(_ => {
-      lines(r.nextInt(lines.size))
-    }).toList
+  @DeveloperApi
+  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
+    val partition = split.asInstanceOf[RyftRDDPartition]
+    logDebug(s"Compute partition, idx: ${partition.idx}")
 
-    val queries = words.map(w => SimpleRyftQuery(List(w)))
-    val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
-    val count = ryftRDD.countByKey()
-    println("\n\ncount: "+count.mkString("\n"))
-    Thread.sleep(10000)
+    val is = new URL(partition.query).openConnection().getInputStream
+    val lines = scala.io.Source.fromInputStream(is).getLines()
+    val parser = new JsonFactory().createParser(lines.mkString("\n"))
+    val key = partition.key
+    val idx = partition.idx
+
+    logDebug(s"Start processing iterator for partition with idx: ${partition.idx}")
+
+    new Iterator[T](){
+      override def hasNext: Boolean = {
+        if (SimpleJsonParser.hasNext(parser)) true
+        else {
+          logDebug(s"Iterator processing ended for partition with idx: $idx")
+          is.close()
+          false
+        }
+      }
+
+      override def next(): T = {
+        val result = SimpleJsonParser.parseJson(parser).asInstanceOf[Map[String,String]]
+        transform(result)
+      }
+    }
   }
 }
+

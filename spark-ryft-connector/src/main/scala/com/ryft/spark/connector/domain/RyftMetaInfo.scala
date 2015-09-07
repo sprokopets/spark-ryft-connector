@@ -28,34 +28,16 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector.domain
 
-import com.ryft.spark.connector.domain.RyftMetaInfo
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery
-import org.apache.spark.{SparkContext, SparkConf}
-import com.ryft.spark.connector._
-
-object StreamExample extends App {
-  val lines = scala.io.Source.fromURL(args(0)).getLines().toSeq
-
-  val sparkConf = new SparkConf()
-    .setAppName("StreamExample")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
-
-  val sc = new SparkContext(sparkConf)
-  val r = scala.util.Random
-
-  val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
-  while(true) {
-    val words = (0 until 5).map(_ => {
-      lines(r.nextInt(lines.size))
-    }).toList
-
-    val queries = words.map(w => SimpleRyftQuery(List(w)))
-    val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
-    val count = ryftRDD.countByKey()
-    println("\n\ncount: "+count.mkString("\n"))
-    Thread.sleep(10000)
-  }
-}
+/**
+ * Represents Meta information used for making request to Ryft
+ *
+ * @param files Files to search
+ * @param surrounding Width when generating results. For example, a value of 2 means that 2
+ *                    characters before and after a search match will be included with data result
+ * @param fuzziness Specify the fuzzy search distance [0..255]
+ */
+case class RyftMetaInfo(files: List[String],
+                        surrounding: Int,
+                        fuzziness: Byte)

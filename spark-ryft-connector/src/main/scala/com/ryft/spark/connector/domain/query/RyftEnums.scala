@@ -28,34 +28,23 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector.domain.query
 
-import com.ryft.spark.connector.domain.RyftMetaInfo
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery
-import org.apache.spark.{SparkContext, SparkConf}
-import com.ryft.spark.connector._
+sealed trait InputSpecifier {def value: String}
+case object rawText extends InputSpecifier {val value = "RAW_TEXT"}
+case object record extends InputSpecifier {val value = "RECORD"}
+case object recordField extends InputSpecifier {val value = "RECORD."}
 
-object StreamExample extends App {
-  val lines = scala.io.Source.fromURL(args(0)).getLines().toSeq
+sealed trait LogicalOperator {def value: String}
+case object empty extends LogicalOperator {val value = ""}
+case object and extends LogicalOperator {val value = "AND"}
+case object or extends LogicalOperator {val value = "OR"}
+case object xor extends LogicalOperator {val value = "XOR"}
 
-  val sparkConf = new SparkConf()
-    .setAppName("StreamExample")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
+sealed trait RelationalOperator {def value: String}
+case object equals extends RelationalOperator{val value = "EQUALS"}
+case object notEquals extends RelationalOperator{val value = "NOT_EQUALS"}
+case object contains extends RelationalOperator {val value = "CONTAINS"}
+case object notContains extends RelationalOperator{val value = "NOT_CONTAINS"}
 
-  val sc = new SparkContext(sparkConf)
-  val r = scala.util.Random
 
-  val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
-  while(true) {
-    val words = (0 until 5).map(_ => {
-      lines(r.nextInt(lines.size))
-    }).toList
-
-    val queries = words.map(w => SimpleRyftQuery(List(w)))
-    val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
-    val count = ryftRDD.countByKey()
-    println("\n\ncount: "+count.mkString("\n"))
-    Thread.sleep(10000)
-  }
-}

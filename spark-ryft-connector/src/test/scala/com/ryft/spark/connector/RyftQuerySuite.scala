@@ -30,52 +30,36 @@
 
 package com.ryft.spark.connector
 
-import com.ryft.spark.connector.domain.query.{RyftRecordQuery, SimpleRyftQuery}
 import com.ryft.spark.connector.domain.RyftMetaInfo
-import com.ryft.spark.connector.rdd.RyftPairRDD
-import com.ryft.spark.connector.util.{TransformFunctions, PartitioningHelper, RyftHelper}
-import org.apache.spark.SparkContext
+import com.ryft.spark.connector.domain.query._
+import com.ryft.spark.connector.util.RyftHelper
+import org.scalatest.FunSuite
 
-/**
- * Provides Ryft-specific methods on [[org.apache.spark.SparkContext SparkContext]]
- *
- */
-class SparkContextFunctions(@transient val sc: SparkContext) {
-  def ryftPairRDDStructured[Map](queries: List[RyftRecordQuery],
-                                 metaInfo: RyftMetaInfo) = {
-    val preparedQueries = queries.flatMap(query => {
-      //FIXME: used only first query to choose partition
-      val partitions = PartitioningHelper.choosePartitions(query.queries.head.query)
-      val endpoints = partitions.map(p => p.endpoint)
-      val preferredLocations = partitions.flatMap(p => p.preferredLocations)
+class RyftQuerySuite extends FunSuite {
 
-      endpoints.map(e => {
-        val ryftQuery = RyftHelper.queryToString(query, metaInfo)
-
-        (query.queries.mkString(","),
-          e + "/search" + ryftQuery + "&format=xml",
-          preferredLocations)
-      })
-    })
-    new RyftPairRDD(sc, preparedQueries, a => a)
+  test("test ryft query builder") {
+    val query = "?query=((RECORD%20CONTAINS%20%22alex%22)AND(RECORD%20EQUALS%20%22john%22)" +
+      "OR(RECORD%20NOT_EQUALS%20%22martin%22))&files=passengers.txt&surrounding=10&fuzziness=2"
+    val ryftQuery = new RyftQueryBuilder("alex", record, contains)
+      .and("john", record, domain.query.equals)
+      .or("martin", record, notEquals)
+      .build
+    val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)
+    assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
   }
 
-  def ryftPairRDD[RyftData](queries: List[SimpleRyftQuery],
-                            metaInfo: RyftMetaInfo) = {
-    val preparedQueries = queries.flatMap(query => {
-      //FIXME: used only first query to choose partition
-      val partitions = PartitioningHelper.choosePartitions(query.queries.head)
-      val endpoints = partitions.map(p => p.endpoint)
-      val preferredLocations = partitions.flatMap(p => p.preferredLocations)
+  test("test simple query") {
+    val query = "?query=((RAW_TEXT%20CONTAINS%20%22Michael%22))&files=passengers.txt&surrounding=10&fuzziness=2"
+    val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)
+    val ryftQuery = new SimpleRyftQuery(List("Michael"))
+    assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
+  }
 
-      endpoints.map(e => {
-        val ryftQuery = RyftHelper.queryToString(query, metaInfo)
-
-        (query.queries.mkString(","),
-          e + "/search" + ryftQuery,
-          preferredLocations)
-      })
-    })
-    new RyftPairRDD(sc, preparedQueries, TransformFunctions.transform)
+  test("test few simple queries") {
+    val query = "?query=((RAW_TEXT%20CONTAINS%20%22Michael%22)" +
+      "OR(RAW_TEXT%20CONTAINS%20%22Alex%22))&files=passengers.txt&surrounding=10&fuzziness=2"
+    val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)
+    val ryftQuery = new SimpleRyftQuery(List("Michael","Alex"))
+    assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
   }
 }

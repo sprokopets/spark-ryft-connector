@@ -32,131 +32,46 @@ package com.ryft.spark.connector.rdd
 
 import java.net.URL
 
-import _root_.spray.json.DefaultJsonProtocol
-import _root_.spray.json.JsArray
-import _root_.spray.json.JsNumber
-import _root_.spray.json.JsObject
-import _root_.spray.json.JsString
+import com.fasterxml.jackson.core.JsonFactory
+import com.ryft.spark.connector.util.{TransformFunctions, SimpleJsonParser, RyftHelper}
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.{TaskContext, Partition, SparkContext}
-import org.apache.spark.rdd.RDD
+
 import scala.io.Source
 import scala.reflect.ClassTag
-import spray.json._
-import DefaultJsonProtocol._
 
-/**
- * RDD representing Set of queries to Ryft One
- *
- * This class is the main entry point for analyzing data from Ryft with Spark.
- * Obtain objects of this class by calling
- * [[com.ryft.spark.connector.SparkContextFunctions.ryftPairRDD]].
- *
- * Configuration properties should be passed in the [[org.apache.spark.SparkConf SparkConf]]
- * configuration of [[org.apache.spark.SparkContext SparkContext]].
- *
- * A `RyftPairRDD` object gets serialized and sent to every Spark Executor, which then
- * calls the `compute` method to fetch the data on every node.
+class RyftPairRDD[T: ClassTag](@transient sc: SparkContext,
+                                        queries: Iterable[(String,String,Seq[String])],
+                                        transform: Map[String, Any] => T)
+  extends RyftRDD[(String,T), T](sc, queries, transform) {
 
- * The `getPartitions` method creates partition for every query.
- * It represents connection to Ryft REST for retrieving data for query
-
- * The `getPreferredLocations` method tells Spark the preferred nodes
- * to compute a partition, so that the data for
- * the partition should be processed by collocated spark node.
- * It prevents data to transfer between nodes.
- *
- * The `mapLine` parameter represents function to convert single line
- * to custom object [T]
- */
-class RyftPairRDD [T: ClassTag](@transient sc: SparkContext,
-                                queries: Iterable[(String,String,Seq[String])],
-                                mapLine: String => Option[T])
-  extends RDD[(String,T)](sc, Nil) {
-
-  @DeveloperApi
-  override def compute(split: Partition, context: TaskContext): Iterator[(String, T)] = {
-    val partition = split.asInstanceOf[RyftPairRDDPartition]
+  @DeveloperApi override
+  def compute(split: Partition, context: TaskContext): Iterator[(String, T)] = {
+    val partition = split.asInstanceOf[RyftRDDPartition]
     logDebug(s"Compute partition, idx: ${partition.idx}")
 
     val is = new URL(partition.query).openConnection().getInputStream
+    val lines = scala.io.Source.fromInputStream(is).getLines()
+    val parser = new JsonFactory().createParser(lines.mkString("\n"))
     val key = partition.key
     val idx = partition.idx
 
-    //Prepare iterator with no empty elements.
-    //By empty mean element(line) not applicable to
-    //convert into [T] type
-    val lines = Source.fromInputStream(is)
-      .getLines()
-      .filter(l => mapLine(l).nonEmpty)
+    logDebug(s"Start processing iterator for partition with idx: ${partition.idx}")
 
-    logDebug(s"Start processing iterator for partition with idx: $idx")
-    new Iterator[(String,T)] {
-      override def next(): (String,T) = {
-        val simpleLine = lines.next()
-        val line = mapLine(simpleLine)
-        (key, line.get)
-      }
-
+    new Iterator[(String,T)](){
       override def hasNext: Boolean = {
-        if (lines.hasNext) true
+        if (SimpleJsonParser.hasNext(parser)) true
         else {
           logDebug(s"Iterator processing ended for partition with idx: $idx")
           is.close()
           false
         }
       }
+
+      override def next(): (String,T) = {
+        val result = SimpleJsonParser.parseJson(parser).asInstanceOf[Map[String,Any]]
+        (key, transform(result))
+      }
     }
-  }
-
-  override protected def getPartitions: Array[Partition] = {
-    val partitioner = new RyftPairRDDPartitioner
-    val partitions = partitioner.partitions(queries)
-    logDebug(s"Created total ${partitions.length} partitions.")
-    logDebug("Partitions: \n" + partitions.mkString("\n"))
-    partitions
-  }
-
-  override protected def getPreferredLocations(split: Partition): Seq[String] = {
-    val partition = split.asInstanceOf[RyftPairRDDPartition]
-    logDebug(("Preferred locations for partition:" +
-      "\npartitions idx: %s" +
-      "\nlocations: %s")
-      .format(partition.idx, partition.preferredLocations.mkString("\n")))
-    partition.preferredLocations
-  }
-}
-
-/**
- * Describes `RyftPairRDD` partition
- *
- * @param idx Identifier of the partition, used internally by Spark
- * @param key Search query key
- * @param query Ryft REST query
- * @param preferredLocations Preferred spark workers
- */
-case class RyftPairRDDPartition(idx: Int,
-                                key: String,
-                                query: String,
-                                preferredLocations: Seq[String])
-  extends Partition {
-  override def index: Int = idx
-  override def toString: String = JsObject(
-    Map(
-      "idx" -> JsNumber(idx),
-      "key" -> JsString(key),
-      "query" -> JsString(query),
-      "preferredLocations" -> JsArray(preferredLocations.map(_.toJson).toVector)
-    )).toJson.prettyPrint
-}
-
-/**
- * Simple `RyftPairRDD` partitioner to prepare partitions
- */
-class RyftPairRDDPartitioner {
-  def partitions(queries: Iterable[(String,String, Seq[String])]): Array[Partition] = {
-    (for((query,i) <- queries.zipWithIndex) yield {
-      new RyftPairRDDPartition(i, query._1, query._2, query._3)
-    }).toArray[Partition]
   }
 }

@@ -30,6 +30,8 @@
 
 package com.ryft.spark.connector.examples
 
+import com.ryft.spark.connector.domain.RyftMetaInfo
+import com.ryft.spark.connector.domain.query.SimpleRyftQuery
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 import com.ryft.spark.connector._
 
@@ -41,10 +43,10 @@ object SimplePairRDDExample extends App with Logging {
 
   val sc = new SparkContext(sparkConf)
 
-  val ryftRDD = sc.ryftPairRDD(List("jones","alex","andrey", "bob", "candy",
-    "peter", "sam", "pavel", "rachel", "nolan"), List("reddit/*"), 10, 0)
+  val query = SimpleRyftQuery(List("john"))
+  val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
+  val ryftRDD = sc.ryftPairRDD(List(query),metaInfo)
 
-  ryftRDD.first()
   val count = ryftRDD.countByKey()
   logInfo("count: \n"+count.mkString("\n"))
 }

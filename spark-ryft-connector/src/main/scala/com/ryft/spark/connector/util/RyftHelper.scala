@@ -30,76 +30,40 @@
 
 package com.ryft.spark.connector.util
 
-import com.ryft.spark.connector.domain.RyftData
-import org.apache.commons.codec.binary.Base64
-import org.json4s.DefaultFormats
-import org.json4s.native.JsonMethods._
-
-import scala.util.Try
+import com.ryft.spark.connector.domain.query._
+import com.ryft.spark.connector.domain.{RyftMetaInfo, RyftData}
 
 /**
  * Provides helper functions specific for Ryft
  */
 private [connector] object RyftHelper {
 
-  /**
-   * Prepares fuzzy queries bunched with search query and preferred location
-   *
-   * @param queries Search queries
-   * @param files Files to search
-   * @param surrounding Width when generating results. For example, a value of 2 means that 2
-   *                    characters before and after a search match will be included with data result
-   * @param fuzziness Specify the fuzzy search distance [0..255]
-   *
-   * @return List of Tuple3 (fuzzy query, query, preferred location)
-   */
-  def fuzzyQueries(queries: List[String],
-                   files: List[String],
-                   surrounding: Int,
-                   fuzziness: Byte): List[(String,String,Seq[String])] = {
-    queries.flatMap(query => {
-      val queryWithQuotes = "\"" + query + "\""
-      val queryPart = new StringBuilder(s"/search" +
-        s"?query=(RAW_TEXT%20CONTAINS$queryWithQuotes)")
+  def queryToString(query: SimpleRyftQuery, metaInfo: RyftMetaInfo) = {
+    //prepare Ryft specific queries
+    val queries = query.queries
+    val preparedQueries = new StringBuilder(s"(${rawText.value}%20CONTAINS%20%22${queries.head}%22)")
+    if (queries.tail.nonEmpty) {
+      queries.tail.foreach(q => preparedQueries.append(s"OR(${rawText.value}%20CONTAINS%20%22$q%22)"))
+    }
 
-      for(f <- files) {
-        queryPart.append(s"&files=$f")
-      }
-      queryPart.append(s"&surrounding=$surrounding")
-      queryPart.append(s"&fuzziness=$fuzziness")
+    val files = new StringBuilder
+    metaInfo.files.foreach(f => files.append(s"&files=$f"))
 
-      val partitions = PartitioningHelper.choosePartitions(query)
-      val fuzzyQueries = partitions.map(p => {
-        (query, p.endpoint+queryPart.toString, p.preferredLocations)
-      })
-
-      fuzzyQueries
-    })
+    s"?query=($preparedQueries)$files&surrounding=${metaInfo.surrounding}&fuzziness=${metaInfo.fuzziness}"
   }
 
-  /**
-   * Mapping function to convert JSON -> RyftData
-   * @param line String with JSON object
-   * @return mapped object or None if cannot parse JSON
-   */
-  def mapToRyftData(line: String): Option[RyftData] = {
-    implicit val formats = DefaultFormats
+  def queryToString(query: RyftRecordQuery, metaInfo: RyftMetaInfo) = {
+    val queries = query.queries
+    val h = queries.head
+    val sb = new StringBuilder(s"${h.logicalOperator.value}" +
+      s"(${h.inputSpecifier.value}%20${h.relationalOperator.value}%20%22${h.query}%22)")
 
-    val open = line.indexOf('{')
-    if (open == -1) None
-    else {
-      val close = line.lastIndexOf('}')
-      val jsonLine =
-        if (close+1 >= line.length) line.substring(open)
-        else line.substring(open, close)
+    queries.tail.foreach(h => sb.append(s"${h.logicalOperator.value}" +
+      s"(${h.inputSpecifier.value}%20${h.relationalOperator.value}%20%22${h.query}%22)"))
 
-      val ryftDataOption = Try(parse(jsonLine).extract[RyftData])
-      if (ryftDataOption.isSuccess) {
-        val ryftData = ryftDataOption.get
-        Some(new RyftData(ryftData.file, ryftData.offset,
-          ryftData.length, ryftData.fuzziness,
-          new String(Base64.decodeBase64(ryftData.data))))
-      } else None
-    }
+    val files = new StringBuilder
+    metaInfo.files.foreach(f => files.append(s"&files=$f"))
+
+    s"?query=($sb)$files&surrounding=${metaInfo.surrounding}&fuzziness=${metaInfo.fuzziness}"
   }
 }
