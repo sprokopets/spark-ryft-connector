@@ -48,6 +48,14 @@ class RyftQuerySuite extends FunSuite {
     assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
   }
 
+  test("test ryft query builder record field") {
+    val query = "?query=((RECORD.field1%20CONTAINS%20%22alex%22))&files=passengers.txt&surrounding=10&fuzziness=2"
+    val ryftQuery = new RyftQueryBuilder("alex", recordField("field1"), contains)
+      .build
+    val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)
+    assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
+  }
+
   test("test simple query") {
     val query = "?query=((RAW_TEXT%20CONTAINS%20%22Michael%22))&files=passengers.txt&surrounding=10&fuzziness=2"
     val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)

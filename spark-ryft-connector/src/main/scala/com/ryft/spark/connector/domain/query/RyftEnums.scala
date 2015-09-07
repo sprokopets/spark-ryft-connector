@@ -33,7 +33,8 @@ package com.ryft.spark.connector.domain.query
 sealed trait InputSpecifier {def value: String}
 case object rawText extends InputSpecifier {val value = "RAW_TEXT"}
 case object record extends InputSpecifier {val value = "RECORD"}
-case object recordField extends InputSpecifier {val value = "RECORD."}
+//workaround to be able specify field name for record
+case class recordField(f: String) extends InputSpecifier {def value = "RECORD."+f}
 
 sealed trait LogicalOperator {def value: String}
 case object empty extends LogicalOperator {val value = ""}
