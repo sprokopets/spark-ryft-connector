@@ -36,10 +36,12 @@ import org.apache.commons.codec.binary.Base64
 object TransformFunctions {
   def transform(obj: Map[String, Any]) = {
     val objS = obj.asInstanceOf[Map[String, String]]
-    RyftData(objS("file"),
-      objS("offset").toInt,
-      objS("length").toInt,
-      objS("fuzziness").toByte,
-      new String(Base64.decodeBase64(objS("data"))))
+    //FIXME: _index hardcoded now, need to be able parametrize it
+    val index = obj.get("_index").get.asInstanceOf[Map[String,String]]
+    RyftData(index("file"),
+      index("offset").toInt,
+      index("length").toInt,
+      index("fuzziness").toByte,
+      new String(Base64.decodeBase64(index("base64"))))
   }
 }
