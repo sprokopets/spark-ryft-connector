@@ -28,22 +28,40 @@
  * ============
  */
 
-package com.ryft.spark.connector.util
+package com.ryft.spark.connector.rdd
 
-import com.ryft.spark.connector.domain.RyftData
-import org.apache.commons.codec.binary.Base64
+import java.net.URL
 
-object TransformFunctions {
-  def toRyftData(obj: Map[String, Any]) = {
-    val objS = obj.asInstanceOf[Map[String, String]]
-    //FIXME: _index hardcoded now, need to be able parametrize it
-    val index = obj.get("_index").get.asInstanceOf[Map[String,String]]
-    RyftData(index("file"),
-      index("offset").toInt,
-      index("length").toInt,
-      index("fuzziness").toByte,
-      new String(Base64.decodeBase64(objS("base64"))))
+import com.fasterxml.jackson.core.JsonFactory
+import com.ryft.spark.connector.util.SimpleJsonParser
+import org.apache.spark.{Partition, Logging}
+
+abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] => T)
+  extends Iterator[R] with Logging {
+
+  val partition = split.asInstanceOf[RyftRDDPartition]
+  logDebug(s"Compute partition, idx: ${partition.idx}")
+
+  val is = new URL(partition.query).openConnection().getInputStream
+  val lines = scala.io.Source.fromInputStream(is).getLines()
+  val parser = new JsonFactory().createParser(lines.mkString("\n"))
+  val key = partition.key
+  val idx = partition.idx
+
+  var accumulator = Map.empty[String,String]
+
+  override def hasNext: Boolean = {
+    val json = SimpleJsonParser.parseJson(parser)
+    json match {
+      case accum1: Map[String, String] =>
+        accumulator = json.asInstanceOf[Map[String,String]]
+        true
+      case _                           =>
+        logDebug(s"Iterator processing ended for partition with idx: $idx")
+        is.close()
+        false
+    }
   }
 
-  def noTransform(obj: Map[String, Any]) = obj
+  override def next(): R
 }

@@ -33,9 +33,12 @@ package com.ryft.spark.connector.rdd
 import java.net.URL
 
 import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.ryft.spark.connector.util.{TransformFunctions, SimpleJsonParser, RyftHelper}
+import org.apache.commons.io.IOUtils
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.{TaskContext, Partition, SparkContext}
+import org.msgpack.jackson.dataformat.MessagePackFactory
 
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -58,19 +61,16 @@ class RyftPairRDD[T: ClassTag](@transient sc: SparkContext,
 
     logDebug(s"Start processing iterator for partition with idx: ${partition.idx}")
 
-    new Iterator[(String,T)](){
-      override def hasNext: Boolean = {
-        if (SimpleJsonParser.hasNext(parser)) true
-        else {
-          logDebug(s"Iterator processing ended for partition with idx: $idx")
-          is.close()
-          false
+    new RyftIterator[T, (String, T)](partition, transform) {
+      override def next(): (String, T) = {
+        if (accumulator.isEmpty) {
+          logWarning("Next element does not exist")
+          throw new RuntimeException("Next element does not exist")
         }
-      }
 
-      override def next(): (String,T) = {
-        val result = SimpleJsonParser.parseJson(parser).asInstanceOf[Map[String,Any]]
-        (key, transform(result))
+        val elem = transform(accumulator)
+        accumulator = Map.empty[String,String]
+        (key, elem)
       }
     }
   }

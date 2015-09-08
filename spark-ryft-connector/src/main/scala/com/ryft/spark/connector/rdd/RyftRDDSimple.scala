@@ -30,15 +30,9 @@
 
 package com.ryft.spark.connector.rdd
 
-import java.net.URL
-
-import com.fasterxml.jackson.core.JsonFactory
-import com.ryft.spark.connector.domain.RyftData
-import com.ryft.spark.connector.util.{SimpleJsonParser, RyftHelper}
 import org.apache.spark.{TaskContext, Partition, SparkContext}
 import org.apache.spark.annotation.DeveloperApi
 
-import scala.io.Source
 import scala.reflect.ClassTag
 
 class RyftRDDSimple[T: ClassTag](@transient sc: SparkContext,
@@ -49,29 +43,18 @@ class RyftRDDSimple[T: ClassTag](@transient sc: SparkContext,
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val partition = split.asInstanceOf[RyftRDDPartition]
-    logDebug(s"Compute partition, idx: ${partition.idx}")
-
-    val is = new URL(partition.query).openConnection().getInputStream
-    val lines = scala.io.Source.fromInputStream(is).getLines()
-    val parser = new JsonFactory().createParser(lines.mkString("\n"))
-    val key = partition.key
-    val idx = partition.idx
 
     logDebug(s"Start processing iterator for partition with idx: ${partition.idx}")
-
-    new Iterator[T](){
-      override def hasNext: Boolean = {
-        if (SimpleJsonParser.hasNext(parser)) true
-        else {
-          logDebug(s"Iterator processing ended for partition with idx: $idx")
-          is.close()
-          false
-        }
-      }
-
+    new RyftIterator[T,T](partition, transform) {
       override def next(): T = {
-        val result = SimpleJsonParser.parseJson(parser).asInstanceOf[Map[String,String]]
-        transform(result)
+        if (accumulator.isEmpty) {
+          logWarning("Next element does not exist")
+          throw new RuntimeException("Next element does not exist")
+        }
+
+        val elem = transform(accumulator)
+        accumulator = Map.empty[String, String]
+        elem
       }
     }
   }

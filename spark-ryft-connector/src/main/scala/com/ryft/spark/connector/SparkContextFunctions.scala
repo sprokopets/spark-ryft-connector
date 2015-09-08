@@ -32,7 +32,7 @@ package com.ryft.spark.connector
 
 import com.ryft.spark.connector.domain.query.{RyftRecordQuery, SimpleRyftQuery}
 import com.ryft.spark.connector.domain.RyftMetaInfo
-import com.ryft.spark.connector.rdd.RyftPairRDD
+import com.ryft.spark.connector.rdd.{RyftRDDSimple, RyftPairRDD}
 import com.ryft.spark.connector.util.{TransformFunctions, PartitioningHelper, RyftHelper}
 import org.apache.spark.SparkContext
 
@@ -41,41 +41,27 @@ import org.apache.spark.SparkContext
  *
  */
 class SparkContextFunctions(@transient val sc: SparkContext) {
+  def ryftRDDStructured[Map](queries: List[RyftRecordQuery],
+                                 metaInfo: RyftMetaInfo) = {
+    val preparedQueries = RyftHelper.prepareQueriesRecord(queries, metaInfo)
+    new RyftRDDSimple(sc, preparedQueries, TransformFunctions.noTransform)
+  }
+
+  def ryftRDDSimple[RyftData](queries: List[RyftRecordQuery],
+                              metaInfo: RyftMetaInfo) = {
+    val preparedQueries = RyftHelper.prepareQueriesRecord(queries, metaInfo)
+    new RyftRDDSimple(sc, preparedQueries, TransformFunctions.toRyftData)
+  }
+
   def ryftPairRDDStructured[Map](queries: List[RyftRecordQuery],
                                  metaInfo: RyftMetaInfo) = {
-    val preparedQueries = queries.flatMap(query => {
-      //FIXME: used only first query to choose partition
-      val partitions = PartitioningHelper.choosePartitions(query.queries.head.query)
-      val endpoints = partitions.map(p => p.endpoint)
-      val preferredLocations = partitions.flatMap(p => p.preferredLocations)
-
-      endpoints.map(e => {
-        val ryftQuery = RyftHelper.queryToString(query, metaInfo)
-
-        (query.queries.mkString(","),
-          e + "/search" + ryftQuery + "&format=xml",
-          preferredLocations)
-      })
-    })
-    new RyftPairRDD(sc, preparedQueries, a => a)
+    val preparedQueries = RyftHelper.prepareQueriesRecord(queries, metaInfo)
+    new RyftPairRDD(sc, preparedQueries, TransformFunctions.noTransform)
   }
 
   def ryftPairRDD[RyftData](queries: List[SimpleRyftQuery],
                             metaInfo: RyftMetaInfo) = {
-    val preparedQueries = queries.flatMap(query => {
-      //FIXME: used only first query to choose partition
-      val partitions = PartitioningHelper.choosePartitions(query.queries.head)
-      val endpoints = partitions.map(p => p.endpoint)
-      val preferredLocations = partitions.flatMap(p => p.preferredLocations)
-
-      endpoints.map(e => {
-        val ryftQuery = RyftHelper.queryToString(query, metaInfo)
-
-        (query.queries.mkString(","),
-          e + "/search" + ryftQuery,
-          preferredLocations)
-      })
-    })
-    new RyftPairRDD(sc, preparedQueries, TransformFunctions.transform)
+    val preparedQueries = RyftHelper.prepareQueriesSimple(queries, metaInfo)
+    new RyftPairRDD(sc, preparedQueries, TransformFunctions.toRyftData)
   }
 }

@@ -38,6 +38,41 @@ import com.ryft.spark.connector.domain.{RyftMetaInfo, RyftData}
  */
 private [connector] object RyftHelper {
 
+  def prepareQueriesRecord(queries: List[RyftRecordQuery], metaInfo: RyftMetaInfo) = {
+    queries.flatMap(query => {
+      //FIXME: used only first query to choose partition
+      val partitions = PartitioningHelper.choosePartitions(query.queries.head.query)
+      val endpoints = partitions.map(p => p.endpoint)
+      val preferredLocations = partitions.flatMap(p => p.preferredLocations)
+
+      endpoints.map(e => {
+        val ryftQuery = RyftHelper.queryToString(query, metaInfo)
+
+        (query.queries.mkString(","),
+          e + "/search" + ryftQuery + "&format=xml",
+          preferredLocations)
+      })
+    })
+  }
+
+  def prepareQueriesSimple(queries: List[SimpleRyftQuery],
+                     metaInfo: RyftMetaInfo) = {
+    queries.flatMap(query => {
+      //FIXME: used only first query to choose partition
+      val partitions = PartitioningHelper.choosePartitions(query.queries.head)
+      val endpoints = partitions.map(p => p.endpoint)
+      val preferredLocations = partitions.flatMap(p => p.preferredLocations)
+
+      endpoints.map(e => {
+        val ryftQuery = RyftHelper.queryToString(query, metaInfo)
+
+        (query.queries.mkString(","),
+          e + "/search" + ryftQuery,
+          preferredLocations)
+      })
+    })
+  }
+
   def queryToString(query: SimpleRyftQuery, metaInfo: RyftMetaInfo) = {
     //prepare Ryft specific queries
     val queries = query.queries

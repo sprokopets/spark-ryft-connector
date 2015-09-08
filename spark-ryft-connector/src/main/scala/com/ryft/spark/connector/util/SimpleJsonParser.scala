@@ -52,7 +52,8 @@ object SimpleJsonParser {
         parseJsonObj(parser)
       case JsonToken.START_ARRAY  =>
         parser.nextToken() //TODO: skip
-        parseJsonObj(parser)
+        if (parser.getCurrentToken == null) parser.nextToken()
+        if (parser.getCurrentToken != JsonToken.END_ARRAY) parseJsonObj(parser)
       case _                      => //TODO: something wrong, handle case
     }
   }
