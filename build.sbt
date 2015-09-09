@@ -44,6 +44,7 @@ lazy val commonSettings = Seq(
       "com.typesafe.akka"       %  "akka-actor_2.10"              % akkaVersion,
       "org.apache.spark"        %  "spark-core_2.10"              % sparkVersion,
       "org.apache.spark"        %  "spark-streaming_2.10"         % sparkVersion,
+      "org.apache.spark"        %  "spark-sql_2.10"                % sparkVersion,
       "org.apache.spark"        %  "spark-streaming-twitter_2.10" % sparkVersion,
       "org.scalaj"              %  "scalaj-http_2.10"             % scalajVersion,
       "ch.qos.logback"          %  "logback-classic"              % logbackVersion,

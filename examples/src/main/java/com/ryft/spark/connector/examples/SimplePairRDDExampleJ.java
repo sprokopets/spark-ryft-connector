@@ -45,12 +45,12 @@ import scala.collection.Seq;
 import java.util.Collections;
 
 public class SimplePairRDDExampleJ {
-    private static final Logger logger = LoggerFactory.getLogger(SimplePairRDDExampleJ.class)
+    private static final Logger logger = LoggerFactory.getLogger(SimplePairRDDExampleJ.class);
 
     public static void main(String[] args) {
         SparkConf sparkConf = new SparkConf()
                 .setAppName("SimplePairRDDExample")
-//                .setMaster("local[2]")
+                .setMaster("local[2]")
                 .set("spark.locality.wait", "120s")
                 .set("spark.locality.wait.node", "120s");
 

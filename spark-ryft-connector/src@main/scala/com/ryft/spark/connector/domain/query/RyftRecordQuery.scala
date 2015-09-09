@@ -28,43 +28,12 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector.domain.query
 
-import com.ryft.spark.connector.domain.RyftMetaInfo
-import com.ryft.spark.connector.{domain, RyftQueryBuilder}
-import com.ryft.spark.connector.domain.query.{and, contains, recordField, SimpleRyftQuery}
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.{SparkContext, SparkConf, Logging}
+case class RyftRecordQuery(queries: Seq[RyftRecord])
 
-import com.ryft.spark.connector._
-
-object StructuredPairRDDExample extends App with Logging {
-  val sparkConf = new SparkConf()
-    .setAppName("SimplePairRDDExample")
-    .setMaster("local[2]")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
-
-  val sc = new SparkContext(sparkConf)
-  val sqlContext = new SQLContext(sc)
-
-  val ryftQuery = new RyftQueryBuilder("04/15/2015", recordField("date"), contains)
-    .or("04/14/2015", recordField("date"), contains)
-    .or("04/13/2015", recordField("date"), contains)
-    .build
-
-  val ryftComplexQuery = new RyftQueryBuilder("VEHICLE", recordField("desc"),
-    contains, and, ryftQuery.queries)
-  .build
-
-  val metaInfo = RyftMetaInfo(List("*.pcrime"), 10, 0)
-  val ryftRDD = sc.ryftRDDStructured(List(ryftComplexQuery),metaInfo)
-
-  val countByDescription = ryftRDD.map(m => {
-    (m.get("LocationDescription"), 1)
-  }).reduceByKey(_ + _)
-
-  countByDescription.foreach({case(key, count) =>
-    println("key: "+key.get+" count: "+count)
-  })
-}
+case class RyftRecord(query: String,
+                      inputSpecifier: InputSpecifier,
+                      logicalOperator: LogicalOperator,
+                      relationalOperator: RelationalOperator,
+                      nestedRecords: Seq[RyftRecord])

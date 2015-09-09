@@ -28,30 +28,51 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector.rdd
 
-import com.ryft.spark.connector.domain.RyftMetaInfo
-import com.ryft.spark.connector.domain.query.{contains, recordField, SimpleRyftQuery}
-import org.apache.spark.{Logging, SparkContext, SparkConf}
-import com.ryft.spark.connector._
+import java.net.URL
 
-object SimplePairRDDExample extends App with Logging {
-  val sparkConf = new SparkConf()
-    .setAppName("SimplePairRDDExample")
-    .setMaster("local[2]")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
+import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.ryft.spark.connector.util.{TransformFunctions, SimpleJsonParser, RyftHelper}
+import org.apache.commons.codec.binary.{BinaryCodec, Hex}
+import org.apache.commons.io.IOUtils
+import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.{TaskContext, Partition, SparkContext}
+import org.msgpack.jackson.dataformat.MessagePackFactory
 
-  val sc = new SparkContext(sparkConf)
+import scala.io.Source
+import scala.reflect.ClassTag
 
-  val query = SimpleRyftQuery(List("october"))
+class RyftPairRDD[T: ClassTag](@transient sc: SparkContext,
+                                        queries: Iterable[(String,String,Seq[String])],
+                                        transform: Map[String, Any] => T)
+  extends RyftRDD[(String,T), T](sc, queries, transform) {
 
-  val ryftQuery = new RyftQueryBuilder("NARCOTICS", recordField("primaryType"), domain.query.equals)
-    .build
+  @DeveloperApi override
+  def compute(split: Partition, context: TaskContext): Iterator[(String, T)] = {
+    val partition = split.asInstanceOf[RyftRDDPartition]
+    logDebug(s"Compute partition, idx: ${partition.idx}")
 
-  val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
-  val ryftRDD = sc.ryftPairRDD(List(query),metaInfo)
+    val is = new URL(partition.query).openConnection().getInputStream
+    val lines = scala.io.Source.fromInputStream(is).getLines()
+    val parser = new JsonFactory().createParser(lines.mkString("\n"))
+    val key = partition.key
+    val idx = partition.idx
 
-  val count = ryftRDD.countByKey()
-  logInfo("count: \n"+count.mkString("\n"))
+    logDebug(s"Start processing iterator for partition with idx: ${partition.idx}")
+
+    new RyftIterator[T, (String, T)](partition, transform) {
+      override def next(): (String, T) = {
+        if (accumulator.isEmpty) {
+          logWarning("Next element does not exist")
+          throw new RuntimeException("Next element does not exist")
+        }
+
+        val elem = transform(accumulator)
+        accumulator = Map.empty[String,String]
+        (key, elem)
+      }
+    }
+  }
 }
