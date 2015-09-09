@@ -77,7 +77,13 @@ object SimpleJsonParser {
           val fieldValue = parser.getValueAsString
           parser.nextToken()
           fieldValue
+
         case JsonToken.VALUE_NUMBER_INT =>
+          val fieldValue = parser.getValueAsString
+          parser.nextToken()
+          fieldValue
+
+        case JsonToken.VALUE_NULL =>
           val fieldValue = parser.getValueAsString
           parser.nextToken()
           fieldValue

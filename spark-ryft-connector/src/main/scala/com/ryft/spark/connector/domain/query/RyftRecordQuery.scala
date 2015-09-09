@@ -35,4 +35,5 @@ case class RyftRecordQuery(queries: Seq[RyftRecord])
 case class RyftRecord(query: String,
                       inputSpecifier: InputSpecifier,
                       logicalOperator: LogicalOperator,
-                      relationalOperator: RelationalOperator)
+                      relationalOperator: RelationalOperator,
+                      nestedRecords: Seq[RyftRecord])

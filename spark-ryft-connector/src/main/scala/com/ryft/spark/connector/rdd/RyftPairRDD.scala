@@ -35,6 +35,7 @@ import java.net.URL
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ryft.spark.connector.util.{TransformFunctions, SimpleJsonParser, RyftHelper}
+import org.apache.commons.codec.binary.{BinaryCodec, Hex}
 import org.apache.commons.io.IOUtils
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.{TaskContext, Partition, SparkContext}
