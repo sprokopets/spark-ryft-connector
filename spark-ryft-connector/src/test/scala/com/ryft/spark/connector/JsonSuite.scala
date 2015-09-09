@@ -172,11 +172,7 @@ class JsonSuite extends FunSuite {
   ignore("test parse complex json") {
     val is = new ByteArrayInputStream(complexJson.getBytes)
     val lines = scala.io.Source.fromInputStream(is).getLines()
-//    val parser = new ObjectMapper().getFactory.createParser(lines.mkString("\n"))
-
-//    val objectMapper = new ObjectMapper(new MessagePackFactory())
-    val objectMapper = new ObjectMapper()
-    val parser = new MessagePackFactory().createParser(is)
+    val parser = new ObjectMapper().getFactory.createParser(lines.mkString("\n"))
 
     val jsonMap = SimpleJsonParser.parseJson(parser).asInstanceOf[List[Any]]
     assert(jsonMap != null)

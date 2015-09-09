@@ -76,9 +76,9 @@ private [connector] object RyftHelper {
   def queryToString(query: SimpleRyftQuery, metaInfo: RyftMetaInfo) = {
     //prepare Ryft specific queries
     val queries = query.queries
-    val preparedQueries = new StringBuilder(s"(${rawText.value}%20CONTAINS%20%22${queries.head}%22)")
+    val preparedQueries = new StringBuilder(s"(${rawText.value}%20${contains.value}%20%22${queries.head}%22)")
     if (queries.tail.nonEmpty) {
-      queries.tail.foreach(q => preparedQueries.append(s"OR(${rawText.value}%20CONTAINS%20%22$q%22)"))
+      queries.tail.foreach(q => preparedQueries.append(s"OR(${rawText.value}%20${contains.value}%20%22$q%22)"))
     }
 
     val files = new StringBuilder

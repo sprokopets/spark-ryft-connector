@@ -50,7 +50,8 @@ lazy val commonSettings = Seq(
       "org.json4s"              %  "json4s-native_2.10"           % json4sVersion,
       "org.json4s"              %  "json4s-core_2.10"             % json4sVersion,
       "org.twitter4j"           %  "twitter4j-stream"             % twitter4jVersion,
-      "io.spray"                %  "spray-json_2.10"              % sprayJson
+      "io.spray"                %  "spray-json_2.10"              % sprayJson,
+      "org.msgpack"             %  "jackson-dataformat-msgpack"   % "0.7.0-M5"
     )}
 )
 
@@ -89,7 +90,7 @@ lazy val root = (project in file(".")).
   settings(
     name                := "spark-ryft-connector-root"
   ).
-  dependsOn(sparkRyftConnector,examples)
+  dependsOn(sparkRyftConnector,sparkRyftConnectorJava,examples)
 
 lazy val sparkRyftConnector = (project in file("spark-ryft-connector")).
   settings(commonSettings: _*).
@@ -102,13 +103,13 @@ lazy val sparkRyftConnectorJava = (project in file("spark-ryft-connector-java"))
   settings(commonSettings: _*).
   settings(
     name                := "spark-ryft-connector-java"
-  )
+  ).dependsOn(sparkRyftConnector)
 
 lazy val examples = (project in file("examples")).
   settings(commonSettings: _*).
   settings(examplesSettings: _*).
   settings(
     name                := "examples"
-  ).dependsOn(sparkRyftConnector)
+  ).dependsOn(sparkRyftConnector,sparkRyftConnectorJava)
 
 assemblyJarName in assembly := "spark-ryft-connector.jar"

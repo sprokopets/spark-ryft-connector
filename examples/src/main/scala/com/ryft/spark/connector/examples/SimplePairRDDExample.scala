@@ -31,21 +31,29 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.RyftMetaInfo
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery
+import com.ryft.spark.connector.domain.query.{contains, recordField, SimpleRyftQuery}
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 import com.ryft.spark.connector._
 
 object SimplePairRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
+//    .setMaster("local[2]")
     .set("spark.locality.wait", "120s")
     .set("spark.locality.wait.node", "120s")
 
   val sc = new SparkContext(sparkConf)
 
-  val query = SimpleRyftQuery(List("john"))
+  val query = SimpleRyftQuery(List("october"))
+
+  val ryftQuery = new RyftQueryBuilder("NARCOTICS", recordField("primaryType"), domain.query.equals)
+    .build
+
+//  val metaInfo = RyftMetaInfo(List("*.pcrime"), 10, 0)
   val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
+//  val metaInfo = RyftMetaInfo(List("passengers.txt"), 10, 0)
   val ryftRDD = sc.ryftPairRDD(List(query),metaInfo)
+//  val ryftRDD = sc.ryftPairRDDStructured(List(ryftQuery),metaInfo)
 
   val count = ryftRDD.countByKey()
   logInfo("count: \n"+count.mkString("\n"))

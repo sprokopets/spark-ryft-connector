@@ -28,40 +28,26 @@
  * ============
  */
 
-package com.ryft.spark.connector
+package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.query.{RyftRecordQuery, SimpleRyftQuery}
 import com.ryft.spark.connector.domain.RyftMetaInfo
-import com.ryft.spark.connector.rdd.{RyftRDDSimple, RyftPairRDD}
-import com.ryft.spark.connector.util.{TransformFunctions, PartitioningHelper, RyftHelper}
-import org.apache.spark.SparkContext
+import com.ryft.spark.connector.domain.query.SimpleRyftQuery
+import org.apache.spark.{Logging, SparkContext, SparkConf}
 
-/**
- * Provides Ryft-specific methods on [[org.apache.spark.SparkContext SparkContext]]
- *
- */
-class SparkContextFunctions(@transient val sc: SparkContext) {
-  def ryftRDDStructured[Map](queries: List[RyftRecordQuery],
-                                 metaInfo: RyftMetaInfo) = {
-    val preparedQueries = RyftHelper.prepareQueriesRecord(queries, metaInfo)
-    new RyftRDDSimple(sc, preparedQueries, TransformFunctions.noTransform)
-  }
+import com.ryft.spark.connector._
 
-  def ryftRDDSimple[RyftData](queries: List[SimpleRyftQuery],
-                              metaInfo: RyftMetaInfo) = {
-    val preparedQueries = RyftHelper.prepareQueriesSimple(queries, metaInfo)
-    new RyftRDDSimple(sc, preparedQueries, TransformFunctions.toRyftData)
-  }
+object SimpleRDDExample extends App with Logging {
+  val sparkConf = new SparkConf()
+    .setAppName("SimplePairRDDExample")
+//    .setMaster("local[2]")
+    .set("spark.locality.wait", "120s")
+    .set("spark.locality.wait.node", "120s")
 
-  def ryftPairRDDStructured[Map](queries: List[RyftRecordQuery],
-                                 metaInfo: RyftMetaInfo) = {
-    val preparedQueries = RyftHelper.prepareQueriesRecord(queries, metaInfo)
-    new RyftPairRDD(sc, preparedQueries, TransformFunctions.noTransform)
-  }
+  val sc = new SparkContext(sparkConf)
 
-  def ryftPairRDD[RyftData](queries: List[SimpleRyftQuery],
-                            metaInfo: RyftMetaInfo) = {
-    val preparedQueries = RyftHelper.prepareQueriesSimple(queries, metaInfo)
-    new RyftPairRDD(sc, preparedQueries, TransformFunctions.toRyftData)
-  }
+  val query = SimpleRyftQuery(List("october"))
+  val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
+
+  val ryftRDD = sc.ryftRDDSimple(List(query),metaInfo)
+  logInfo("RDD count: "+ryftRDD.count())
 }

@@ -32,6 +32,7 @@ package com.ryft.spark.connector.util
 
 import com.fasterxml.jackson.core.{JsonParser, JsonToken}
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
