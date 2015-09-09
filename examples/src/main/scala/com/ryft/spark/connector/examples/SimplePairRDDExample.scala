@@ -49,11 +49,8 @@ object SimplePairRDDExample extends App with Logging {
   val ryftQuery = new RyftQueryBuilder("NARCOTICS", recordField("primaryType"), domain.query.equals)
     .build
 
-//  val metaInfo = RyftMetaInfo(List("*.pcrime"), 10, 0)
   val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
-//  val metaInfo = RyftMetaInfo(List("passengers.txt"), 10, 0)
   val ryftRDD = sc.ryftPairRDD(List(query),metaInfo)
-//  val ryftRDD = sc.ryftPairRDDStructured(List(ryftQuery),metaInfo)
 
   val count = ryftRDD.countByKey()
   logInfo("count: \n"+count.mkString("\n"))
