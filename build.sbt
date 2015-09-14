@@ -42,17 +42,17 @@ lazy val commonSettings = Seq(
     val sprayJson         = "1.3.2"
     Seq(
       "com.typesafe.akka"       %  "akka-actor_2.10"              % akkaVersion,
-      "org.apache.spark"        %  "spark-core_2.10"              % sparkVersion % "provided",
-      "org.apache.spark"        %  "spark-streaming_2.10"         % sparkVersion % "provided",
-      "org.apache.spark"        %  "spark-sql_2.10"                % sparkVersion % "provided",
-      "org.apache.spark"        %  "spark-streaming-twitter_2.10" % sparkVersion % "provided",
+      "org.apache.spark"        %  "spark-core_2.10"              % sparkVersion,
+      "org.apache.spark"        %  "spark-streaming_2.10"         % sparkVersion,
+      "org.apache.spark"        %  "spark-sql_2.10"                % sparkVersion,
+      "org.apache.spark"        %  "spark-streaming-twitter_2.10" % sparkVersion,
       "org.scalaj"              %  "scalaj-http_2.10"             % scalajVersion,
       "ch.qos.logback"          %  "logback-classic"              % logbackVersion,
       "org.json4s"              %  "json4s-native_2.10"           % json4sVersion,
       "org.json4s"              %  "json4s-core_2.10"             % json4sVersion,
       "org.twitter4j"           %  "twitter4j-stream"             % twitter4jVersion,
       "io.spray"                %  "spray-json_2.10"              % sprayJson,
-      "org.msgpack"             %  "jackson-dataformat-msgpack"   % "0.7.0-M5"
+      "org.msgpack"             %  "jackson-dataformat-msgpack"   % "0.7.0-p9"
     )}
 )
 

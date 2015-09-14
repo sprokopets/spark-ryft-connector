@@ -35,6 +35,7 @@ import java.net.URL
 import com.fasterxml.jackson.core.JsonFactory
 import com.ryft.spark.connector.util.SimpleJsonParser
 import org.apache.spark.{Partition, Logging}
+import org.msgpack.jackson.dataformat.MessagePackFactory
 
 abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] => T)
   extends Iterator[R] with Logging {
@@ -42,9 +43,13 @@ abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] =
   val partition = split.asInstanceOf[RyftRDDPartition]
   logDebug(s"Compute partition, idx: ${partition.idx}")
 
-  val is = new URL(partition.query).openConnection().getInputStream
-  val lines = scala.io.Source.fromInputStream(is).getLines()
-  val parser = new JsonFactory().createParser(lines.mkString("\n"))
+  val connection = new URL(partition.query).openConnection()
+  connection.setRequestProperty("Accept", "application/msgpack")
+  logDebug("Used request header: \nAccept: application/msgpack")
+
+  val is = connection.getInputStream
+  val parser = new MessagePackFactory().createParser(is)
+
   val key = partition.key
   val idx = partition.idx
 
