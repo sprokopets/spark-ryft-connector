@@ -42,7 +42,7 @@ object TransformFunctions {
       index("offset").toInt,
       index("length").toInt,
       index("fuzziness").toByte,
-      new String(Base64.decodeBase64(objS("base64"))))
+      new String(Base64.decodeBase64(objS("data"))))
   }
 
   def noTransform(obj: Map[String, Any]) = obj

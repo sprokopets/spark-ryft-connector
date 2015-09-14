@@ -39,14 +39,14 @@ import com.ryft.spark.connector._
 object SimpleRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
-//    .setMaster("local[2]")
+    .setMaster("local[2]")
     .set("spark.locality.wait", "120s")
     .set("spark.locality.wait.node", "120s")
 
   val sc = new SparkContext(sparkConf)
 
-  val query = SimpleRyftQuery(List("october"))
-  val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
+  val query = SimpleRyftQuery(List("Jones"))
+  val metaInfo = RyftMetaInfo(List("passengers.txt"), 10, 0)
 
   val ryftRDD = sc.ryftRDDSimple(List(query),metaInfo)
   logInfo("RDD count: "+ryftRDD.count())
