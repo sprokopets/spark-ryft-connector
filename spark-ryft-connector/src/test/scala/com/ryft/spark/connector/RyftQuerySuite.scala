@@ -30,7 +30,7 @@
 
 package com.ryft.spark.connector
 
-import com.ryft.spark.connector.domain.RyftMetaInfo
+import com.ryft.spark.connector.domain.RyftQueryOptions
 import com.ryft.spark.connector.domain.query._
 import com.ryft.spark.connector.util.RyftHelper
 import org.scalatest.FunSuite
@@ -44,7 +44,7 @@ class RyftQuerySuite extends FunSuite {
       .and(record, domain.query.equals, "john")
       .or(record, notEquals, "martin")
       .build
-    val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)
+    val metaInfo = new RyftQueryOptions(List("passengers.txt"), 10, 2)
     assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
   }
 
@@ -52,13 +52,13 @@ class RyftQuerySuite extends FunSuite {
     val query = "?query=((RECORD.field1%20CONTAINS%20%22alex%22))&files=passengers.txt&surrounding=10&fuzziness=2"
     val ryftQuery = new RyftQueryBuilder(recordField("field1"), contains, "alex")
       .build
-    val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)
+    val metaInfo = new RyftQueryOptions(List("passengers.txt"), 10, 2)
     assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
   }
 
   test("test simple query") {
     val query = "?query=((RAW_TEXT%20CONTAINS%20%22Michael%22))&files=passengers.txt&surrounding=10&fuzziness=2"
-    val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)
+    val metaInfo = new RyftQueryOptions(List("passengers.txt"), 10, 2)
     val ryftQuery = new SimpleRyftQuery(List("Michael"))
     assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
   }
@@ -66,7 +66,7 @@ class RyftQuerySuite extends FunSuite {
   test("test few simple queries") {
     val query = "?query=((RAW_TEXT%20CONTAINS%20%22Michael%22)" +
       "OR(RAW_TEXT%20CONTAINS%20%22Alex%22))&files=passengers.txt&surrounding=10&fuzziness=2"
-    val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)
+    val metaInfo = new RyftQueryOptions(List("passengers.txt"), 10, 2)
     val ryftQuery = new SimpleRyftQuery(List("Michael","Alex"))
     assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
   }

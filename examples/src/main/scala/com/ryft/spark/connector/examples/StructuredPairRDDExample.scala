@@ -30,7 +30,7 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.RyftMetaInfo
+import com.ryft.spark.connector.domain.RyftQueryOptions
 import com.ryft.spark.connector.{domain, RyftQueryBuilder}
 import com.ryft.spark.connector.domain.query.{and, contains, recordField, SimpleRyftQuery}
 import org.apache.spark.sql.SQLContext
@@ -53,14 +53,12 @@ object StructuredPairRDDExample extends App with Logging {
       .and(recordField("desc"), contains, "VEHICLE")
     .build
 
-  val metaInfo = RyftMetaInfo(List("*.pcrime"), 10, 0)
-  val ryftRDD = sc.ryftRDDStructured(List(ryftQuery),metaInfo)
+  val ryftOptions = RyftQueryOptions(List("*.pcrime"), 0, 0)
+  val ryftRDD = sc.ryftRDDStructured(List(ryftQuery),ryftOptions)
 
   val countByDescription = ryftRDD.map(m => {
     (m.get("LocationDescription"), 1)
   }).reduceByKey(_ + _)
-
-  countByDescription.count()
 
   countByDescription.foreach({case(key, count) =>
     println("key: "+key.get+" count: "+count)

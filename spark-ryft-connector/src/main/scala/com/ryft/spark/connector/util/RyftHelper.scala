@@ -31,14 +31,14 @@
 package com.ryft.spark.connector.util
 
 import com.ryft.spark.connector.domain.query._
-import com.ryft.spark.connector.domain.{RyftMetaInfo, RyftData}
+import com.ryft.spark.connector.domain.{RyftQueryOptions, RyftData}
 
 /**
  * Provides helper functions specific for Ryft
  */
 private [connector] object RyftHelper {
 
-  def prepareQueriesRecord(queries: List[RyftRecordQuery], metaInfo: RyftMetaInfo) = {
+  def prepareQueriesRecord(queries: List[RyftRecordQuery], metaInfo: RyftQueryOptions) = {
     queries.flatMap(query => {
       //FIXME: used only first query to choose partition
       val partitions = PartitioningHelper.choosePartitions(query.queries.head.query)
@@ -56,7 +56,7 @@ private [connector] object RyftHelper {
   }
 
   def prepareQueriesSimple(queries: List[SimpleRyftQuery],
-                     metaInfo: RyftMetaInfo) = {
+                     metaInfo: RyftQueryOptions) = {
     queries.flatMap(query => {
       //FIXME: used only first query to choose partition
       val partitions = PartitioningHelper.choosePartitions(query.queries.head)
@@ -73,7 +73,7 @@ private [connector] object RyftHelper {
     })
   }
 
-  def queryToString(query: SimpleRyftQuery, metaInfo: RyftMetaInfo) = {
+  def queryToString(query: SimpleRyftQuery, metaInfo: RyftQueryOptions) = {
     //prepare Ryft specific queries
     val queries = query.queries
     val preparedQueries = new StringBuilder(s"(${rawText.value}%20${contains.value}%20%22${queries.head}%22)")
@@ -87,7 +87,7 @@ private [connector] object RyftHelper {
     s"?query=($preparedQueries)$files&surrounding=${metaInfo.surrounding}&fuzziness=${metaInfo.fuzziness}"
   }
 
-  def queryToString(query: RyftRecordQuery, metaInfo: RyftMetaInfo) = {
+  def queryToString(query: RyftRecordQuery, metaInfo: RyftQueryOptions) = {
     val queries = query.queries
     val h = queries.head
     val sb = new StringBuilder(s"${h.logicalOperator.value}" +

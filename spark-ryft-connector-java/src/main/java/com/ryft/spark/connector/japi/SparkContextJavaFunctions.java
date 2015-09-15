@@ -2,7 +2,7 @@ package com.ryft.spark.connector.japi;
 
 import com.ryft.spark.connector.SparkContextFunctions;
 import com.ryft.spark.connector.domain.RyftData;
-import com.ryft.spark.connector.domain.RyftMetaInfo;
+import com.ryft.spark.connector.domain.RyftQueryOptions;
 import com.ryft.spark.connector.domain.query.SimpleRyftQuery;
 import com.ryft.spark.connector.japi.rdd.RyftPairJavaRDD;
 import com.ryft.spark.connector.rdd.RyftPairRDD;
@@ -32,7 +32,7 @@ public class SparkContextJavaFunctions {
     }
 
     public <T> RyftPairJavaRDD<Tuple2<String, T>> ryftPairJavaRDD(List<SimpleRyftQuery> ryftQueries,
-                                                       RyftMetaInfo metaInfo) {
+                                                       RyftQueryOptions metaInfo) {
         final Seq seq = toScalaSeq(ryftQueries.toArray(new SimpleRyftQuery[ryftQueries.size()]));
         final RyftPairRDD ryftPairRDD = sparkContextFunctions.ryftPairRDD(seq.toList(),metaInfo);
         return toJavaRDD(ryftPairRDD, RyftData.class);

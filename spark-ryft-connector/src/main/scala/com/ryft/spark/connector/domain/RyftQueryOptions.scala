@@ -38,6 +38,6 @@ package com.ryft.spark.connector.domain
  *                    characters before and after a search match will be included with data result
  * @param fuzziness Specify the fuzzy search distance [0..255]
  */
-case class RyftMetaInfo(files: List[String],
+case class RyftQueryOptions(files: List[String],
                         surrounding: Int,
                         fuzziness: Byte)

@@ -30,7 +30,7 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.RyftMetaInfo
+import com.ryft.spark.connector.domain.RyftQueryOptions
 import com.ryft.spark.connector.domain.query.SimpleRyftQuery
 import org.apache.spark.{SparkContext, SparkConf}
 import com.ryft.spark.connector._
@@ -46,7 +46,7 @@ object StreamExample extends App {
   val sc = new SparkContext(sparkConf)
   val r = scala.util.Random
 
-  val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)
+  val metaInfo = RyftQueryOptions(List("reddit/*"), 10, 0)
   while(true) {
     val words = (0 until 5).map(_ => {
       lines(r.nextInt(lines.size))

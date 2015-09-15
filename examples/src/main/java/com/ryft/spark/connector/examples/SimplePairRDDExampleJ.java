@@ -30,7 +30,7 @@
 
 package com.ryft.spark.connector.examples;
 
-import com.ryft.spark.connector.domain.RyftMetaInfo;
+import com.ryft.spark.connector.domain.RyftQueryOptions;
 import com.ryft.spark.connector.domain.query.SimpleRyftQuery;
 import com.ryft.spark.connector.japi.RyftJavaUtil;
 import com.ryft.spark.connector.japi.SparkContextJavaFunctions;
@@ -65,7 +65,7 @@ public class SimplePairRDDExampleJ {
 
         final RyftPairJavaRDD rdd = javaFunctions.ryftPairJavaRDD(
                 Collections.singletonList(new SimpleRyftQuery(querySec.toList())),
-                new RyftMetaInfo(filesSeq.toList(), 10, b));
+                new RyftQueryOptions(filesSeq.toList(), 10, b));
         logger.info("count: {}", rdd.count());
     }
 }

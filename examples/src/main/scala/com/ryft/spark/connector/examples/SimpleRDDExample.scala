@@ -30,7 +30,7 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.RyftMetaInfo
+import com.ryft.spark.connector.domain.RyftQueryOptions
 import com.ryft.spark.connector.domain.query.SimpleRyftQuery
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 
@@ -46,7 +46,7 @@ object SimpleRDDExample extends App with Logging {
   val sc = new SparkContext(sparkConf)
 
   val query = SimpleRyftQuery(List("Jones"))
-  val metaInfo = RyftMetaInfo(List("passengers.txt"), 10, 0)
+  val metaInfo = RyftQueryOptions(List("passengers.txt"), 10, 0)
 
   val ryftRDD = sc.ryftRDDSimple(List(query),metaInfo)
   logInfo("RDD count: "+ryftRDD.count())
