@@ -87,23 +87,11 @@ private [connector] object RyftHelper {
     s"?query=($preparedQueries)$files&surrounding=${metaInfo.surrounding}&fuzziness=${metaInfo.fuzziness}"
   }
 
-  def queryToString(query: RyftRecordQuery, metaInfo: RyftMetaInfo): String = {
+  def queryToString(query: RyftRecordQuery, metaInfo: RyftMetaInfo) = {
     val queries = query.queries
     val h = queries.head
-//    val sb = new StringBuilder(s"${h.logicalOperator.value}" +
-    val sb = new StringBuilder("")
-
-    val sb1 = new StringBuilder("")
-    if (h.nestedRecords.nonEmpty) {
-      val nestedQueries = h.nestedRecords
-      nestedQueries.foreach(h1 => sb1.append(s"${h1.logicalOperator.value}" +
-        s"(${h1.inputSpecifier.value}%20${h1.relationalOperator.value}%20%22${h1.query}%22)"))
-      sb.append(s"($sb1)${h.logicalOperator.value}")
-    }
-
-    sb.append(s"(${h.inputSpecifier.value}%20${h.relationalOperator.value}%20%22${h.query}%22)")
-
-
+    val sb = new StringBuilder(s"${h.logicalOperator.value}" +
+      s"(${h.inputSpecifier.value}%20${h.relationalOperator.value}%20%22${h.query}%22)")
 
     queries.tail.foreach(h => sb.append(s"${h.logicalOperator.value}" +
       s"(${h.inputSpecifier.value}%20${h.relationalOperator.value}%20%22${h.query}%22)"))

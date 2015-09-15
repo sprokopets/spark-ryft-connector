@@ -46,23 +46,21 @@ object StructuredPairRDDExample extends App with Logging {
     .set("spark.locality.wait.node", "120s")
 
   val sc = new SparkContext(sparkConf)
-  val sqlContext = new SQLContext(sc)
 
-  val ryftQuery = new RyftQueryBuilder("04/15/2015", recordField("date"), contains)
-    .or("04/14/2015", recordField("date"), contains)
-    .or("04/13/2015", recordField("date"), contains)
+  val ryftQuery = new RyftQueryBuilder(recordField("date"), contains, "04/15/2015")
+      .and(recordField("desc"), contains, "VEHICLE")
+    .or(recordField("date"), contains, "04/14/2015")
+      .and(recordField("desc"), contains, "VEHICLE")
     .build
 
-  val ryftComplexQuery = new RyftQueryBuilder("VEHICLE", recordField("desc"),
-    contains, and, ryftQuery.queries)
-  .build
-
   val metaInfo = RyftMetaInfo(List("*.pcrime"), 10, 0)
-  val ryftRDD = sc.ryftRDDStructured(List(ryftComplexQuery),metaInfo)
+  val ryftRDD = sc.ryftRDDStructured(List(ryftQuery),metaInfo)
 
   val countByDescription = ryftRDD.map(m => {
     (m.get("LocationDescription"), 1)
   }).reduceByKey(_ + _)
+
+  countByDescription.count()
 
   countByDescription.foreach({case(key, count) =>
     println("key: "+key.get+" count: "+count)

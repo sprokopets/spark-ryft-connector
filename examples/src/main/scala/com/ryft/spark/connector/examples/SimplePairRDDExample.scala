@@ -46,7 +46,7 @@ object SimplePairRDDExample extends App with Logging {
 
   val query = SimpleRyftQuery(List("october"))
 
-  val ryftQuery = new RyftQueryBuilder("NARCOTICS", recordField("primaryType"), domain.query.equals)
+  val ryftQuery = new RyftQueryBuilder(recordField("primaryType"), domain.query.equals, "NARCOTICS")
     .build
 
   val metaInfo = RyftMetaInfo(List("reddit/*"), 10, 0)

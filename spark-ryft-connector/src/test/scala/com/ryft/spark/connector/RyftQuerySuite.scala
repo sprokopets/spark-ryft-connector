@@ -40,9 +40,9 @@ class RyftQuerySuite extends FunSuite {
   test("test ryft query builder") {
     val query = "?query=((RECORD%20CONTAINS%20%22alex%22)AND(RECORD%20EQUALS%20%22john%22)" +
       "OR(RECORD%20NOT_EQUALS%20%22martin%22))&files=passengers.txt&surrounding=10&fuzziness=2"
-    val ryftQuery = new RyftQueryBuilder("alex", record, contains)
-      .and("john", record, domain.query.equals)
-      .or("martin", record, notEquals)
+    val ryftQuery = new RyftQueryBuilder(record, contains, "alex")
+      .and(record, domain.query.equals, "john")
+      .or(record, notEquals, "martin")
       .build
     val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)
     assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
@@ -50,7 +50,7 @@ class RyftQuerySuite extends FunSuite {
 
   test("test ryft query builder record field") {
     val query = "?query=((RECORD.field1%20CONTAINS%20%22alex%22))&files=passengers.txt&surrounding=10&fuzziness=2"
-    val ryftQuery = new RyftQueryBuilder("alex", recordField("field1"), contains)
+    val ryftQuery = new RyftQueryBuilder(recordField("field1"), contains, "alex")
       .build
     val metaInfo = new RyftMetaInfo(List("passengers.txt"), 10, 2)
     assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))

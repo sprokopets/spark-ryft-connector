@@ -58,7 +58,7 @@ abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] =
   override def hasNext: Boolean = {
     val json = SimpleJsonParser.parseJson(parser)
     json match {
-      case accum1: Map[String, String] =>
+      case accum: Map[String, String] =>
         accumulator = json.asInstanceOf[Map[String,String]]
         true
       case _                           =>

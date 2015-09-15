@@ -42,43 +42,31 @@ class RyftQueryBuilder(query: String,
 
   private val recordQueries = mutable.ListBuffer.empty[RyftRecord]
 
-  def this(query: String,
-           inputSpecifier: InputSpecifier,
-           relationalOperator: RelationalOperator) = {
+  def this(inputSpecifier: InputSpecifier,
+           relationalOperator: RelationalOperator,
+           query: String) = {
     this(query, inputSpecifier, empty, relationalOperator)
-    recordQueries += new RyftRecord(query, inputSpecifier, empty, relationalOperator, Nil)
+    recordQueries += new RyftRecord(query, inputSpecifier, empty, relationalOperator)
   }
 
-  def this(query: String,
-          inputSpecifier: InputSpecifier,
+  def and(inputSpecifier: InputSpecifier,
           relationalOperator: RelationalOperator,
-           logicalOperator: LogicalOperator,
-          nestedQueries: Seq[RyftRecord]) = {
-    this(query, inputSpecifier, empty, relationalOperator)
-    recordQueries += new RyftRecord(query, inputSpecifier, logicalOperator, relationalOperator, nestedQueries)
-  }
-
-  def and(query: String,
-          inputSpecifier: InputSpecifier,
-          relationalOperator: RelationalOperator,
-          nestedQueries: List[RyftRecord] = Nil) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.and, relationalOperator, nestedQueries)
+          query: String) = {
+    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.and, relationalOperator)
     this
   }
 
-  def or(query: String,
-          inputSpecifier: InputSpecifier,
-          relationalOperator: RelationalOperator,
-         nestedQueries: List[RyftRecord] = Nil) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.or, relationalOperator, nestedQueries)
+  def or(inputSpecifier: InputSpecifier,
+         relationalOperator: RelationalOperator,
+         query: String) = {
+    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.or, relationalOperator)
     this
   }
 
-  def xor(query: String,
-          inputSpecifier: InputSpecifier,
+  def xor(inputSpecifier: InputSpecifier,
           relationalOperator: RelationalOperator,
-          nestedQueries: List[RyftRecord] = Nil) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.xor, relationalOperator, nestedQueries)
+          query: String) = {
+    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.xor, relationalOperator)
     this
   }
 
