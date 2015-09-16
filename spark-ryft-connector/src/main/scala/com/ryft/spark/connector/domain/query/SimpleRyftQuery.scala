@@ -30,4 +30,6 @@
 
 package com.ryft.spark.connector.domain.query
 
-case class SimpleRyftQuery(queries: List[String])
+case class SimpleRyftQuery(queries: List[String]) {
+  def this(query: String) = this(List(query))
+}

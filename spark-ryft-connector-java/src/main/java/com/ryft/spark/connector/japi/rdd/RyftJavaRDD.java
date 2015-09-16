@@ -28,20 +28,15 @@
  * ============
  */
 
-package com.ryft.spark.connector.util
+package com.ryft.spark.connector.japi.rdd;
 
-import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.rdd.RDD;
+import scala.reflect.ClassTag;
 
-object JavaApiHelper {
-  /** Returns a `ClassTag` of a given runtime class. */
-  def getClassTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
-
-  def toScalaSeq[T](elem: T): Seq[T] = Seq(elem)
-
-  def toScalaSeq[T](elems: java.util.List[T]): Seq[T] = elems.asScala.toSeq
-
-  def toScalaList[T](elem: T): List[T] = List(elem)
-
-  def toScalaList[T](elems: java.util.List[T]): List[T] = elems.asScala.toList
+@SuppressWarnings({"unchecked", "UnusedDeclaration"})
+public class RyftJavaRDD<T> extends JavaRDD<T> {
+    public RyftJavaRDD(RDD<T> rdd, ClassTag<T> classTag) {
+        super(rdd, classTag);
+    }
 }

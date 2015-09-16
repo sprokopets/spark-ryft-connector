@@ -39,5 +39,9 @@ package com.ryft.spark.connector.domain
  * @param fuzziness Specify the fuzzy search distance [0..255]
  */
 case class RyftQueryOptions(files: List[String],
-                        surrounding: Int,
-                        fuzziness: Byte)
+                            surrounding: Int,
+                            fuzziness: Byte) {
+  def this(file: String,
+           surrounding: Int,
+           fuzziness: Byte) = this(List(file), surrounding, fuzziness)
+}
