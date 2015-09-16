@@ -28,9 +28,10 @@
 
 import sbt.Keys._
 
+version := "0.1.0"
+
 lazy val commonSettings = Seq(
   organization        := "com.ryft",
-  version             := "1.0",
   scalaVersion        := "2.10.5",
   libraryDependencies ++= {
     val akkaVersion       = "2.3.12"
@@ -113,4 +114,4 @@ lazy val examples = (project in file("examples")).
     name                := "examples"
   ).dependsOn(sparkRyftConnector,sparkRyftConnectorJava)
 
-assemblyJarName in assembly := "spark-ryft-connector.jar"
+assemblyJarName in assembly := s"spark-ryft-connector_2.10-${version.value}.jar"

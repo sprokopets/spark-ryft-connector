@@ -31,14 +31,13 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.{domain, RyftQueryBuilder}
-import com.ryft.spark.connector.domain.query.{and, contains, recordField, SimpleRyftQuery}
-import org.apache.spark.sql.SQLContext
+import com.ryft.spark.connector.RyftQueryBuilder
+import com.ryft.spark.connector.domain.query.{contains, recordField}
 import org.apache.spark.{SparkContext, SparkConf, Logging}
 
 import com.ryft.spark.connector._
 
-object StructuredPairRDDExample extends App with Logging {
+object StructuredRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
     .setMaster("local[2]")
