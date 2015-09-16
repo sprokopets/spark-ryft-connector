@@ -64,7 +64,10 @@ public class StructuredRDDExampleJ {
         final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
 
         final RyftRecordQuery query = new RyftQueryBuilder(new recordField("date"), contains$.MODULE$, "04/15/2015")
-            .and(new recordField("desc"), contains$.MODULE$, "VEHICLE").build();
+            .and(new recordField("desc"), contains$.MODULE$, "VEHICLE")
+        .or(new recordField("date"), contains$.MODULE$, "04/14/2015")
+            .and(new recordField("desc"), contains$.MODULE$, "VEHICLE")
+        .build();
 
         final RyftJavaRDD<HashMap.HashTrieMap<String,String>> ryftRDDStructured =
                 javaFunctions.ryftRDDStructured(query,
