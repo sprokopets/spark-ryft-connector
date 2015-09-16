@@ -28,20 +28,38 @@
  * ============
  */
 
-package com.ryft.spark.connector.util
+package com.ryft.spark.connector.examples
 
-import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
+import com.ryft.spark.connector.domain.RyftQueryOptions
+import com.ryft.spark.connector.RyftQueryBuilder
+import com.ryft.spark.connector.domain.query.{contains, recordField}
+import org.apache.spark.{SparkContext, SparkConf, Logging}
 
-object JavaApiHelper {
-  /** Returns a `ClassTag` of a given runtime class. */
-  def getClassTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
+import com.ryft.spark.connector._
 
-  def toScalaSeq[T](elem: T): Seq[T] = Seq(elem)
+object StructuredRDDExample extends App with Logging {
+  val sparkConf = new SparkConf()
+    .setAppName("SimplePairRDDExample")
+    .setMaster("local[2]")
+    .set("spark.locality.wait", "120s")
+    .set("spark.locality.wait.node", "120s")
 
-  def toScalaSeq[T](elems: java.util.List[T]): Seq[T] = elems.asScala.toSeq
+  val sc = new SparkContext(sparkConf)
 
-  def toScalaList[T](elem: T): List[T] = List(elem)
+  val ryftQuery = new RyftQueryBuilder(recordField("date"), contains, "04/15/2015")
+      .and(recordField("desc"), contains, "VEHICLE")
+    .or(recordField("date"), contains, "04/14/2015")
+      .and(recordField("desc"), contains, "VEHICLE")
+    .build
 
-  def toScalaList[T](elems: java.util.List[T]): List[T] = elems.asScala.toList
+  val ryftOptions = RyftQueryOptions(List("*.pcrime"), 0, 0)
+  val ryftRDD = sc.ryftRDDStructured(List(ryftQuery),ryftOptions)
+
+  val countByDescription = ryftRDD.map(m => {
+    (m.get("LocationDescription"), 1)
+  }).reduceByKey(_ + _)
+
+  countByDescription.foreach({case(key, count) =>
+    println("key: "+key.get+" count: "+count)
+  })
 }

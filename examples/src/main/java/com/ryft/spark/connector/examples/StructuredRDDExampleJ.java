@@ -30,18 +30,26 @@
 
 package com.ryft.spark.connector.examples;
 
+import com.ryft.spark.connector.RyftQueryBuilder;
 import com.ryft.spark.connector.domain.RyftQueryOptions;
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery;
+import com.ryft.spark.connector.domain.query.RyftRecordQuery;
 import com.ryft.spark.connector.japi.RyftJavaUtil;
 import com.ryft.spark.connector.japi.SparkContextJavaFunctions;
-import com.ryft.spark.connector.japi.rdd.RyftPairJavaRDD;
+import com.ryft.spark.connector.japi.rdd.RyftJavaRDD;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import com.ryft.spark.connector.domain.query.*;
+import com.ryft.spark.connector.domain.query.contains$;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Option;
+import scala.Tuple2;
+import scala.collection.immutable.HashMap;
 
-public class SimplePairRDDExampleJ {
-    private static final Logger logger = LoggerFactory.getLogger(SimplePairRDDExampleJ.class);
+@SuppressWarnings("unchecked")
+public class StructuredRDDExampleJ {
+    private static final Logger logger = LoggerFactory.getLogger(StructuredRDDExampleJ.class);
 
     public static void main(String[] args) {
         final SparkConf sparkConf = new SparkConf()
@@ -49,16 +57,25 @@ public class SimplePairRDDExampleJ {
                 .setMaster("local[2]")
                 .set("spark.locality.wait", "120s")
                 .set("spark.locality.wait.node", "120s");
+        final byte fuzziness = 0;
+        final int surrounding = 0;
 
         final SparkContext sc = new SparkContext(sparkConf);
         final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
-        final byte fuzziness = 0;
-        final int surrounding = 10;
 
-        final RyftPairJavaRDD rdd = javaFunctions.ryftPairJavaRDD(
-                new SimpleRyftQuery("jones"),
-                new RyftQueryOptions("passengers.txt", surrounding, fuzziness));
+        final RyftRecordQuery query = new RyftQueryBuilder(new recordField("date"), contains$.MODULE$, "04/15/2015")
+            .and(new recordField("desc"), contains$.MODULE$, "VEHICLE").build();
 
-        logger.info("count: {}", rdd.count());
+        final RyftJavaRDD<HashMap.HashTrieMap<String,String>> ryftRDDStructured =
+                javaFunctions.ryftRDDStructured(query,
+                        new RyftQueryOptions("*.pcrime", surrounding, fuzziness));
+
+        final JavaPairRDD<Option<String>, Integer> counts =
+                ryftRDDStructured.mapToPair(map -> new Tuple2<>(map.get("LocationDescription"), 1))
+                .reduceByKey((a, b) -> a + b);
+
+        counts.foreach(tuple -> {
+            logger.info("key: {} value: {}", tuple._1().get(), tuple._2());
+        });
     }
 }
