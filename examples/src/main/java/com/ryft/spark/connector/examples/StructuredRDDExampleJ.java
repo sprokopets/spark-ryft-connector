@@ -32,14 +32,14 @@ package com.ryft.spark.connector.examples;
 
 import com.ryft.spark.connector.RyftQueryBuilder;
 import com.ryft.spark.connector.domain.RyftQueryOptions;
-import com.ryft.spark.connector.domain.query.RyftRecordQuery;
+import com.ryft.spark.connector.domain.recordField;
+import com.ryft.spark.connector.query.RyftRecordQuery;
 import com.ryft.spark.connector.japi.RyftJavaUtil;
 import com.ryft.spark.connector.japi.SparkContextJavaFunctions;
 import com.ryft.spark.connector.japi.rdd.RyftJavaRDD;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
-import com.ryft.spark.connector.domain.query.*;
-import com.ryft.spark.connector.domain.query.contains$;
+import com.ryft.spark.connector.domain.contains$;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

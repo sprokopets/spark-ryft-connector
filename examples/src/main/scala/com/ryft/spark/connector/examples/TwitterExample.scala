@@ -32,7 +32,7 @@ package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector._
 import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery
+import com.ryft.spark.connector.query.SimpleRyftQuery
 
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.twitter.TwitterUtils

@@ -28,8 +28,13 @@
  * ============
  */
 
-package com.ryft.spark.connector.domain.query
+package com.ryft.spark.connector.query
 
-case class SimpleRyftQuery(queries: List[String]) {
-  def this(query: String) = this(List(query))
-}
+import com.ryft.spark.connector.domain.{RelationalOperator, LogicalOperator, InputSpecifier}
+
+case class RyftRecordQuery(queries: Seq[RyftRecord])
+
+case class RyftRecord(query: String,
+                      inputSpecifier: InputSpecifier,
+                      logicalOperator: LogicalOperator,
+                      relationalOperator: RelationalOperator)

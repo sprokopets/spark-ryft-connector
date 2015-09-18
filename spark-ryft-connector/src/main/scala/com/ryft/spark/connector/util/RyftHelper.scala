@@ -31,12 +31,11 @@
 package com.ryft.spark.connector.util
 
 import com.ryft.spark.connector.config.ConfigHolder
-import com.ryft.spark.connector.domain.query._
-import com.ryft.spark.connector.domain.RyftQueryOptions
-import org.apache.spark.{SparkException, SparkConf}
+import com.ryft.spark.connector.query.{RyftRecordQuery, SimpleRyftQuery}
+import org.apache.spark.SparkConf
 import scala.reflect.runtime.universe._
 import scala.collection.JavaConversions._
-
+import com.ryft.spark.connector.domain.{contains, rawText, RyftQueryOptions, RyftData}
 
 /**
  * Provides helper functions specific for Ryft

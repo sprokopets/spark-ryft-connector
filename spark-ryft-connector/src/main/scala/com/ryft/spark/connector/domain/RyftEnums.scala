@@ -28,7 +28,7 @@
  * ============
  */
 
-package com.ryft.spark.connector.domain.query
+package com.ryft.spark.connector.domain
 
 sealed trait InputSpecifier {def value: String}
 case object rawText extends InputSpecifier {val value = "RAW_TEXT"}

@@ -31,7 +31,7 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery
+import com.ryft.spark.connector.query.SimpleRyftQuery
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 
 import com.ryft.spark.connector._

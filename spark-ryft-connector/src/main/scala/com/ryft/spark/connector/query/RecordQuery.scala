@@ -28,48 +28,72 @@
  * ============
  */
 
-package com.ryft.spark.connector
+package com.ryft.spark.connector.query
 
-import com.ryft.spark.connector.domain.{RelationalOperator, empty, LogicalOperator, InputSpecifier}
-import com.ryft.spark.connector.query._
-import com.ryft.spark.connector._
+import com.ryft.spark.connector.domain
+import com.ryft.spark.connector.domain._
 
-import scala.collection.mutable
+private[query] sealed trait GenericQuery
 
-class RyftQueryBuilder(query: String,
-                       inputSpecifier: InputSpecifier,
-                       logicalOperator: LogicalOperator,
-                       relationalOperator: RelationalOperator) {
+private[query] case class SingleQuery(lo: LogicalOperator,
+                       is: InputSpecifier,
+                       ro: RelationalOperator,
+                       query: String) extends GenericQuery
 
-  private val recordQueries = mutable.ListBuffer.empty[RyftRecord]
+private[query] case class NestedQuery(lo: LogicalOperator,
+                                      queries: List[GenericQuery])
+  extends GenericQuery
 
-  def this(inputSpecifier: InputSpecifier,
-           relationalOperator: RelationalOperator,
+case class Query(lo: LogicalOperator,
+                 queries: List[GenericQuery]) extends GenericQuery {
+  def this(is: InputSpecifier,
+           ro: RelationalOperator,
            query: String) = {
-    this(query, inputSpecifier, empty, relationalOperator)
-    recordQueries += new RyftRecord(query, inputSpecifier, empty, relationalOperator)
+    this(empty, SingleQuery(empty, is, ro, query) :: Nil)
   }
 
-  def and(inputSpecifier: InputSpecifier,
-          relationalOperator: RelationalOperator,
+  def this(query: Query) = {
+    this(empty, query :: Nil)
+  }
+
+  def and(is: InputSpecifier,
+          ro: RelationalOperator,
           query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.and, relationalOperator)
-    this
+    Query(empty, SingleQuery(domain.and, is, ro, query) :: queries)
   }
 
-  def or(inputSpecifier: InputSpecifier,
-         relationalOperator: RelationalOperator,
+  def and(query: Query) = {
+    Query(empty, Query(domain.and, query) :: queries)
+  }
+
+  def or(is: InputSpecifier,
+         ro: RelationalOperator,
          query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.or, relationalOperator)
-    this
+    new Query(empty, SingleQuery(domain.or, is, ro, query) :: queries)
   }
 
-  def xor(inputSpecifier: InputSpecifier,
-          relationalOperator: RelationalOperator,
-          query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.xor, relationalOperator)
-    this
+  def or(query: Query) = {
+    Query(empty, Query(domain.or, query) :: queries)
   }
 
-  def build = new RyftRecordQuery(recordQueries.toList)
+  def xor(is: InputSpecifier,
+         ro: RelationalOperator,
+         query: String) = {
+    new Query(empty, SingleQuery(domain.xor, is, ro, query) :: queries)
+  }
+
+  def xor(query: Query) = {
+    Query(empty, Query(domain.xor, query) :: queries)
+  }
+
+  def build = queries
+}
+
+object Query {
+  def apply(is: InputSpecifier,
+            ro: RelationalOperator,
+            query: String) = new Query(is, ro, query)
+
+  def apply(query: Query) = new Query(new Query(empty, query.queries))
+  def apply(lo: LogicalOperator, query: Query) = new Query(lo, query.queries)
 }

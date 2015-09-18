@@ -30,9 +30,8 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.RyftQueryBuilder
-import com.ryft.spark.connector.domain.query.{contains, recordField}
+import com.ryft.spark.connector.domain.{contains, recordField, RyftQueryOptions}
+import com.ryft.spark.connector.query.Query
 import org.apache.spark.{SparkContext, SparkConf, Logging}
 
 import com.ryft.spark.connector._
@@ -46,6 +45,18 @@ object StructuredRDDExample extends App with Logging {
 //    .set("ryft.rest.url", "http://52.20.99.136:8765,http://52.20.99.136:9000")
 
   val sc = new SparkContext(sparkConf)
+
+//  val query =
+//    Query(
+//      Query(recordField("desc"), contains, "VEHICLE")
+//        .and(
+//          Query(recordField("date"), contains, "04/15/2015")
+//            .or(recordField("date"), contains, "04/14/2015"))
+//    )
+//    .or(
+//      Query(recordField("desc"), contains, "BIKE")
+//        .and(recordField("date"), contains, "04/10/2015")
+//    )
 
   val ryftQuery = new RyftQueryBuilder(recordField("date"), contains, "04/15/2015")
       .and(recordField("desc"), contains, "VEHICLE")

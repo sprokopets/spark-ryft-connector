@@ -30,7 +30,7 @@
 
 package com.ryft.spark.connector
 
-import com.ryft.spark.connector.domain.query.{RyftRecordQuery, SimpleRyftQuery}
+import com.ryft.spark.connector.query.{RyftRecordQuery, SimpleRyftQuery}
 import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
 import com.ryft.spark.connector.rdd.{RyftRDDSimple, RyftPairRDD}
 import com.ryft.spark.connector.util.{TransformFunctions, RyftHelper}

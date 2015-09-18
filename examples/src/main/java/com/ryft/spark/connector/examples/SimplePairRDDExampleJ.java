@@ -31,7 +31,7 @@
 package com.ryft.spark.connector.examples;
 
 import com.ryft.spark.connector.domain.RyftQueryOptions;
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery;
+import com.ryft.spark.connector.query.SimpleRyftQuery;
 import com.ryft.spark.connector.japi.RyftJavaUtil;
 import com.ryft.spark.connector.japi.SparkContextJavaFunctions;
 import com.ryft.spark.connector.japi.rdd.RyftPairJavaRDD;
