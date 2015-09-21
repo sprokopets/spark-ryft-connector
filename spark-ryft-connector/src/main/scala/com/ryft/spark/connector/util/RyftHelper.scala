@@ -30,46 +30,51 @@
 
 package com.ryft.spark.connector.util
 
+import com.ryft.spark.connector.config.ConfigHolder
 import com.ryft.spark.connector.domain.query._
-import com.ryft.spark.connector.domain.{RyftQueryOptions, RyftData}
+import com.ryft.spark.connector.domain.RyftQueryOptions
+import org.apache.spark.{SparkException, SparkConf}
+import scala.reflect.runtime.universe._
+import scala.collection.JavaConversions._
+
 
 /**
  * Provides helper functions specific for Ryft
  */
 private [connector] object RyftHelper {
 
-  def prepareQueriesRecord(queries: List[RyftRecordQuery], metaInfo: RyftQueryOptions) = {
-    queries.flatMap(query => {
-      //FIXME: used only first query to choose partition
-      val partitions = PartitioningHelper.choosePartitions(query.queries.head.query)
-      val endpoints = partitions.map(p => p.endpoint)
-      val preferredLocations = partitions.flatMap(p => p.preferredLocations)
+  def prepareQueries[A : TypeTag](queries: List[A],
+                           queryOptions: RyftQueryOptions,
+                           sparkConf: SparkConf): Iterable[(String, String, List[String])] = {
+    val urlOption = sparkConf.getOption("ryft.rest.url")
+    val ryftRestUrls =
+      if (urlOption.nonEmpty) urlOption.get
+        .split(",")
+        .map(url => url.trim)
+        .toList
+      else ConfigHolder.ryftRestUrl.toList
 
-      endpoints.map(e => {
-        val ryftQuery = RyftHelper.queryToString(query, metaInfo)
 
-        (query.queries.mkString(","),
-          e + "/search" + ryftQuery + "&format=xml",
-          preferredLocations)
-      })
-    })
-  }
+    ryftRestUrls.flatMap(ryftRestUrl => {
+      typeOf[A] match {
+        case t if t =:= typeOf[SimpleRyftQuery] =>
+          queries.map(q => {
+            (q.asInstanceOf[SimpleRyftQuery].queries.mkString(","),
+              ryftRestUrl + "/search" + queryToString(q.asInstanceOf[SimpleRyftQuery], queryOptions),
+              Nil)
+          })
 
-  def prepareQueriesSimple(queries: List[SimpleRyftQuery],
-                     metaInfo: RyftQueryOptions) = {
-    queries.flatMap(query => {
-      //FIXME: used only first query to choose partition
-      val partitions = PartitioningHelper.choosePartitions(query.queries.head)
-      val endpoints = partitions.map(p => p.endpoint)
-      val preferredLocations = partitions.flatMap(p => p.preferredLocations)
+        case t if t =:= typeOf[RyftRecordQuery] =>
+          queries.map(q => {
+            val query = queryToString(q.asInstanceOf[RyftRecordQuery], queryOptions)
+            (query,
+              ryftRestUrl + "/search" + query + "&format=xml",
+              Nil)
+          })
 
-      endpoints.map(e => {
-        val ryftQuery = RyftHelper.queryToString(query, metaInfo)
-
-        (query.queries.mkString(","),
-          e + "/search" + ryftQuery,
-          preferredLocations)
-      })
+        case _                                  =>
+          throw new RuntimeException("Unexpected type of queries")
+      }
     })
   }
 
