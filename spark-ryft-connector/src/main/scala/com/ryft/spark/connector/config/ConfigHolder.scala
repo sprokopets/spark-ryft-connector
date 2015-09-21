@@ -34,23 +34,18 @@ import com.ryft.spark.connector.domain.RyftPartition
 import com.typesafe.config._
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 /**
  * Simple config holder. Provides access to partitions configuration.
  */
 class ConfigHolder {
-  val list = ConfigFactory.load()
+  val conifgFactory = ConfigFactory.load()
     .getConfig("spark-ryft-connector")
-    .getObjectList("partitions").asScala
 
-  val partitionsConfigList = (for {
-    item: ConfigObject <- list
-    endpoint = item.get("endpoint").render.replaceAll("\"","")
-    pattern  = item.get("pattern").render.replaceAll("\"","")
-    preferredLocations = item.toConfig.getStringList("preferredLocations")
-  } yield RyftPartition(endpoint, pattern, preferredLocations.asScala)).toList
+  lazy val ryftRestUrl = Try(conifgFactory.getStringList("ryft.rest.url"))
+    .getOrElse(throw new RuntimeException("Ryft REST URL must be set in your configuration. " +
+    "Specify it via SparkConf or application.conf with ryft.rest.url key."))
 }
 
-object ConfigHolder extends ConfigHolder {
-  def getConf = partitionsConfigList
-}
+object ConfigHolder extends ConfigHolder
