@@ -28,48 +28,8 @@
  * ============
  */
 
-package com.ryft.spark.connector
+package com.ryft.spark.connector.query
 
-import com.ryft.spark.connector.domain.{RelationalOperator, empty, LogicalOperator, InputSpecifier}
-import com.ryft.spark.connector.query._
-import com.ryft.spark.connector._
-
-import scala.collection.mutable
-
-class RyftQueryBuilder(query: String,
-                       inputSpecifier: InputSpecifier,
-                       logicalOperator: LogicalOperator,
-                       relationalOperator: RelationalOperator) {
-
-  private val recordQueries = mutable.ListBuffer.empty[RyftRecord]
-
-  def this(inputSpecifier: InputSpecifier,
-           relationalOperator: RelationalOperator,
-           query: String) = {
-    this(query, inputSpecifier, empty, relationalOperator)
-    recordQueries += new RyftRecord(query, inputSpecifier, empty, relationalOperator)
-  }
-
-  def and(inputSpecifier: InputSpecifier,
-          relationalOperator: RelationalOperator,
-          query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.and, relationalOperator)
-    this
-  }
-
-  def or(inputSpecifier: InputSpecifier,
-         relationalOperator: RelationalOperator,
-         query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.or, relationalOperator)
-    this
-  }
-
-  def xor(inputSpecifier: InputSpecifier,
-          relationalOperator: RelationalOperator,
-          query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.xor, relationalOperator)
-    this
-  }
-
-  def build = new RyftRecordQuery(recordQueries.toList)
+case class SimpleQuery(queries: List[String]) {
+  def this(query: String) = this(List(query))
 }

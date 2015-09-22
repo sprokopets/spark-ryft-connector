@@ -30,17 +30,19 @@
 
 package com.ryft.spark.connector.util
 
+import com.ryft.spark.connector.RyftSparkException
 import com.ryft.spark.connector.config.ConfigHolder
-import com.ryft.spark.connector.query.{RyftRecordQuery, SimpleRyftQuery}
+import com.ryft.spark.connector.query.{GenericQuery, SingleQuery, RecordQuery, SimpleQuery}
 import org.apache.spark.SparkConf
+import scala.annotation.tailrec
 import scala.reflect.runtime.universe._
 import scala.collection.JavaConversions._
-import com.ryft.spark.connector.domain.{contains, rawText, RyftQueryOptions, RyftData}
+import com.ryft.spark.connector.domain._
 
 /**
  * Provides helper functions specific for Ryft
  */
-private [connector] object RyftHelper {
+private [connector] object RyftQueryHelper {
 
   def prepareQueries[A : TypeTag](queries: List[A],
                            queryOptions: RyftQueryOptions,
@@ -53,56 +55,73 @@ private [connector] object RyftHelper {
         .toList
       else ConfigHolder.ryftRestUrl.toList
 
-
     ryftRestUrls.flatMap(ryftRestUrl => {
       typeOf[A] match {
-        case t if t =:= typeOf[SimpleRyftQuery] =>
+        case t if t =:= typeOf[SimpleQuery] =>
           queries.map(q => {
-            (q.asInstanceOf[SimpleRyftQuery].queries.mkString(","),
-              ryftRestUrl + "/search" + queryToString(q.asInstanceOf[SimpleRyftQuery], queryOptions),
-              Nil)
+            val ryftQuery = queryToString(q.asInstanceOf[SimpleQuery])
+            (q.asInstanceOf[SimpleQuery].queries.mkString(","),
+              ryftRestUrl + s"/search?query=($ryftQuery)"+ queryOptionsToString(queryOptions),
+              Nil) //FIXME: Nil now because partitioning not implemented yet
           })
 
-        case t if t =:= typeOf[RyftRecordQuery] =>
+        case t if t =:= typeOf[RecordQuery] =>
           queries.map(q => {
-            val query = queryToString(q.asInstanceOf[RyftRecordQuery], queryOptions)
-            (query,
-              ryftRestUrl + "/search" + query + "&format=xml",
-              Nil)
+            val ryftQuery = queryToString(q.asInstanceOf[RecordQuery])
+            val files = new StringBuilder
+            queryOptions.files.foreach(f => files.append(s"&files=$f"))
+            s"$files"
+
+            (ryftQuery,
+              ryftRestUrl + s"/search?query=($ryftQuery)$files&format=xml",
+              Nil) //FIXME: Nil now because partitioning not implemented yet
           })
 
-        case _                                  =>
-          throw new RuntimeException("Unexpected type of queries")
+        case _ =>
+          throw new RyftSparkException("Unable to handle given type")
       }
     })
   }
 
-  def queryToString(query: SimpleRyftQuery, metaInfo: RyftQueryOptions) = {
-    //prepare Ryft specific queries
+  private def queryToString(query: SimpleQuery) = {
     val queries = query.queries
     val preparedQueries = new StringBuilder(s"(${rawText.value}%20${contains.value}%20%22${queries.head}%22)")
     if (queries.tail.nonEmpty) {
       queries.tail.foreach(q => preparedQueries.append(s"OR(${rawText.value}%20${contains.value}%20%22$q%22)"))
     }
-
-    val files = new StringBuilder
-    metaInfo.files.foreach(f => files.append(s"&files=$f"))
-
-    s"?query=($preparedQueries)$files&surrounding=${metaInfo.surrounding}&fuzziness=${metaInfo.fuzziness}"
   }
 
-  def queryToString(query: RyftRecordQuery, metaInfo: RyftQueryOptions) = {
-    val queries = query.queries
-    val h = queries.head
-    val sb = new StringBuilder(s"${h.logicalOperator.value}" +
-      s"(${h.inputSpecifier.value}%20${h.relationalOperator.value}%20%22${h.query}%22)")
+  private def queryToString(query: RecordQuery): String = {
+    queryToString(query.queries, "")
+  }
 
-    queries.tail.foreach(h => sb.append(s"${h.logicalOperator.value}" +
-      s"(${h.inputSpecifier.value}%20${h.relationalOperator.value}%20%22${h.query}%22)"))
+  private def queryToString(query: SingleQuery) = {
+    s"(${query.is.value}%20${query.ro.value}%20%22${query.query}%22)"
+  }
 
+  @tailrec
+  private def queryToString(queries: List[GenericQuery], acc: String): String = {
+    if (queries.isEmpty) acc
+    else {
+      val head = queries.head
+      head match {
+        case sq: SingleQuery => queryToString(queries.tail,
+          sq.lo.value + queryToString(sq) + acc)
+
+        case rq: RecordQuery => queryToString(queries.tail,
+          rq.lo.value + "(" + queryToString(rq) + ")" + acc)
+
+        case _               => throw new RyftSparkException("Unexpected Ryft Query Type")
+      }
+    }
+  }
+
+  //TODO: need to think make it as lazy val, create once
+  private def queryOptionsToString(queryOptions: RyftQueryOptions): String = {
     val files = new StringBuilder
-    metaInfo.files.foreach(f => files.append(s"&files=$f"))
-
-    s"?query=($sb)$files&surrounding=${metaInfo.surrounding}&fuzziness=${metaInfo.fuzziness}"
+    queryOptions.files.foreach(f => files.append(s"&files=$f"))
+    s"$files" +
+      s"&surrounding=${queryOptions.surrounding}" +
+      s"&fuzziness=${queryOptions.fuzziness}"
   }
 }

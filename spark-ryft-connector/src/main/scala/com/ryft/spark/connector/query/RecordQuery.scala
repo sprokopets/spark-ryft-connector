@@ -33,18 +33,18 @@ package com.ryft.spark.connector.query
 import com.ryft.spark.connector.domain
 import com.ryft.spark.connector.domain._
 
-private[query] sealed trait GenericQuery
+private[connector] sealed trait GenericQuery
 
-private[query] case class SingleQuery(lo: LogicalOperator,
+private[connector] case class SingleQuery(lo: LogicalOperator,
                        is: InputSpecifier,
                        ro: RelationalOperator,
                        query: String) extends GenericQuery
 
-private[query] case class NestedQuery(lo: LogicalOperator,
+private[connector] case class NestedQuery(lo: LogicalOperator,
                                       queries: List[GenericQuery])
   extends GenericQuery
 
-case class Query(lo: LogicalOperator,
+case class RecordQuery(lo: LogicalOperator,
                  queries: List[GenericQuery]) extends GenericQuery {
   def this(is: InputSpecifier,
            ro: RelationalOperator,
@@ -52,48 +52,48 @@ case class Query(lo: LogicalOperator,
     this(empty, SingleQuery(empty, is, ro, query) :: Nil)
   }
 
-  def this(query: Query) = {
+  def this(query: RecordQuery) = {
     this(empty, query :: Nil)
   }
 
   def and(is: InputSpecifier,
           ro: RelationalOperator,
           query: String) = {
-    Query(empty, SingleQuery(domain.and, is, ro, query) :: queries)
+    RecordQuery(empty, SingleQuery(domain.and, is, ro, query) :: queries)
   }
 
-  def and(query: Query) = {
-    Query(empty, Query(domain.and, query) :: queries)
+  def and(query: RecordQuery) = {
+    RecordQuery(empty, RecordQuery(domain.and, query) :: queries)
   }
 
   def or(is: InputSpecifier,
          ro: RelationalOperator,
          query: String) = {
-    new Query(empty, SingleQuery(domain.or, is, ro, query) :: queries)
+    new RecordQuery(empty, SingleQuery(domain.or, is, ro, query) :: queries)
   }
 
-  def or(query: Query) = {
-    Query(empty, Query(domain.or, query) :: queries)
+  def or(query: RecordQuery) = {
+    RecordQuery(empty, RecordQuery(domain.or, query) :: queries)
   }
 
   def xor(is: InputSpecifier,
          ro: RelationalOperator,
          query: String) = {
-    new Query(empty, SingleQuery(domain.xor, is, ro, query) :: queries)
+    new RecordQuery(empty, SingleQuery(domain.xor, is, ro, query) :: queries)
   }
 
-  def xor(query: Query) = {
-    Query(empty, Query(domain.xor, query) :: queries)
+  def xor(query: RecordQuery) = {
+    RecordQuery(empty, RecordQuery(domain.xor, query) :: queries)
   }
 
   def build = queries
 }
 
-object Query {
+object RecordQuery {
   def apply(is: InputSpecifier,
             ro: RelationalOperator,
-            query: String) = new Query(is, ro, query)
+            query: String) = new RecordQuery(is, ro, query)
 
-  def apply(query: Query) = new Query(new Query(empty, query.queries))
-  def apply(lo: LogicalOperator, query: Query) = new Query(lo, query.queries)
+  def apply(query: RecordQuery) = new RecordQuery(new RecordQuery(empty, query.queries))
+  def apply(lo: LogicalOperator, query: RecordQuery) = new RecordQuery(lo, query.queries)
 }

@@ -28,8 +28,8 @@
  * ============
  */
 
-package com.ryft.spark.connector.query
+package com.ryft.spark.connector
 
-case class SimpleRyftQuery(queries: List[String]) {
-  def this(query: String) = this(List(query))
+case class RyftSparkException(msg: String)
+  extends RuntimeException(msg) {
 }
