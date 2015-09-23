@@ -30,9 +30,6 @@
 
 package com.ryft.spark.connector.rdd
 
-import java.net.URL
-
-import com.fasterxml.jackson.core.JsonFactory
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.{TaskContext, Partition, SparkContext}
 
@@ -48,9 +45,6 @@ class RyftPairRDD[T: ClassTag](@transient sc: SparkContext,
     val partition = split.asInstanceOf[RyftRDDPartition]
     logDebug(s"Compute partition, idx: ${partition.idx}")
 
-    val is = new URL(partition.query).openConnection().getInputStream
-    val lines = scala.io.Source.fromInputStream(is).getLines()
-    val parser = new JsonFactory().createParser(lines.mkString("\n"))
     val key = partition.key
     val idx = partition.idx
 
