@@ -31,25 +31,26 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.{contains, recordField, RyftQueryOptions}
-import com.ryft.spark.connector.query.RecordQuery
+import com.ryft.spark.connector.query.{SingleQuery, GenericQuery, SimpleQuery, RecordQuery}
 import org.apache.spark.{SparkContext, SparkConf, Logging}
 
 import com.ryft.spark.connector._
 
+import scala.annotation.tailrec
+
 object StructuredRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
-    .setMaster("local[2]")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
-    .set("ryft.rest.url", "http://52.20.99.136:9000")
+//    .setMaster("local[2]")
 
   val sc = new SparkContext(sparkConf)
 
   val query =
-    RecordQuery(recordField("desc"), contains, "VEHICLE")
+    RecordQuery(
+      RecordQuery(recordField("desc"), contains, "VEHICLE")
       .or(recordField("desc"), contains, "BIKE")
-      .or(recordField("desc"), contains, "MOTO")
+      .or(recordField("desc"), contains, "1MOTO"))
+    .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
 
   val ryftOptions = RyftQueryOptions(List("*.pcrime"), 0, 0)
   val ryftRDD = sc.ryftRDDStructured(List(query),ryftOptions)

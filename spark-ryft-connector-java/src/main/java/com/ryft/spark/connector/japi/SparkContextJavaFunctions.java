@@ -64,13 +64,15 @@ public class SparkContextJavaFunctions {
 
     public <T> RyftJavaRDD<T> ryftRDDSimple(SimpleQuery ryftQuery,
                                             RyftQueryOptions queryOptions) {
-        final RyftRDDSimple ryftRDDSimple = sparkContextFunctions.ryftRDDSimple(toScalaList(ryftQuery), queryOptions);
+        //TODO: null added need to pass stub function
+        final RyftRDDSimple ryftRDDSimple = sparkContextFunctions.ryftRDDSimple(toScalaList(ryftQuery), queryOptions,null);
         return toJavaRDD(ryftRDDSimple, RyftData.class);
     }
 
     public RyftJavaRDD ryftRDDStructured(RecordQuery ryftQuery,
                                                 RyftQueryOptions queryOptions) {
-        final RyftRDDSimple ryftRDDSimple = sparkContextFunctions.ryftRDDStructured(toScalaList(ryftQuery), queryOptions);
+        //TODO: null added need to pass stub function
+        final RyftRDDSimple ryftRDDSimple = sparkContextFunctions.ryftRDDStructured(toScalaList(ryftQuery), queryOptions, null);
         return toJavaRDD(ryftRDDSimple, HashMap.HashTrieMap.class);
     }
 

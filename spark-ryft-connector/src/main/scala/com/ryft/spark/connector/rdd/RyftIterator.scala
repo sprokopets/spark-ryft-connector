@@ -30,12 +30,9 @@
 
 package com.ryft.spark.connector.rdd
 
-import java.io.InputStream
 import java.net.{HttpURLConnection, URL}
-import java.util.zip.GZIPInputStream
 
 import com.ryft.spark.connector.util.SimpleJsonParser
-import org.apache.commons.httpclient.ChunkedInputStream
 import org.apache.spark.{Partition, Logging}
 import org.msgpack.jackson.dataformat.MessagePackFactory
 

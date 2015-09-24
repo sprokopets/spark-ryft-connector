@@ -43,9 +43,9 @@ class ConfigHolder {
   val conifgFactory = ConfigFactory.load()
     .getConfig("spark-ryft-connector")
 
-  lazy val ryftRestUrl = Try(conifgFactory.getStringList("ryft.rest.url"))
+  lazy val ryftRestUrl = Try(conifgFactory.getStringList("spark.ryft.rest.url"))
     .getOrElse(throw new RuntimeException("Ryft REST URL must be set in your configuration. " +
-    "Specify it via SparkConf or application.conf with ryft.rest.url key."))
+    "Specify it via SparkConf or application.conf with spark.ryft.rest.url key."))
 }
 
 object ConfigHolder extends ConfigHolder

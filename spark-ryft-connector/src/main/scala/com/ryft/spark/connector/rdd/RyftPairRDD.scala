@@ -36,9 +36,9 @@ import org.apache.spark.{TaskContext, Partition, SparkContext}
 import scala.reflect.ClassTag
 
 class RyftPairRDD[T: ClassTag](@transient sc: SparkContext,
-                                        queries: Iterable[(String,String,Seq[String])],
+                                        queries: Iterable[(String,String,Set[String])],
                                         transform: Map[String, Any] => T)
-  extends RyftRDD[(String,T), T](sc, queries, transform) {
+  extends RyftRDD[(String,T), T](sc, queries) {
 
   @DeveloperApi override
   def compute(split: Partition, context: TaskContext): Iterator[(String, T)] = {

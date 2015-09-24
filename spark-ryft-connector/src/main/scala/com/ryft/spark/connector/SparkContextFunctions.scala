@@ -30,7 +30,7 @@
 
 package com.ryft.spark.connector
 
-import com.ryft.spark.connector.query.{RecordQuery, SimpleQuery}
+import com.ryft.spark.connector.query.{GenericQuery, RecordQuery, SimpleQuery}
 import com.ryft.spark.connector.domain.RyftQueryOptions
 import com.ryft.spark.connector.rdd.{RyftRDDSimple, RyftPairRDD}
 import com.ryft.spark.connector.util.{TransformFunctions, RyftQueryHelper}
@@ -42,26 +42,28 @@ import org.apache.spark.SparkContext
  */
 class SparkContextFunctions(@transient val sc: SparkContext) {
   def ryftRDDStructured[Map](queries: List[RecordQuery],
-                             queryOptions: RyftQueryOptions) = {
-    val preparedQueries = RyftQueryHelper.prepareQueries(queries, queryOptions, sc.getConf)
+                             queryOptions: RyftQueryOptions,
+                             preferredLocations: Any => Set[String] = _ => Set.empty[String]) = {
+    val preparedQueries = RyftQueryHelper.prepareQueries(queries, queryOptions, sc.getConf, preferredLocations)
     new RyftRDDSimple(sc, preparedQueries, TransformFunctions.noTransform)
   }
 
   def ryftRDDSimple[RyftData](queries: List[SimpleQuery],
-                              queryOptions:  RyftQueryOptions) = {
-    val preparedQueries = RyftQueryHelper.prepareQueries(queries, queryOptions, sc.getConf)
+                              queryOptions:  RyftQueryOptions,
+                              preferredPartitions: Any => Set[String] = _ => Set.empty[String]) = {
+    val preparedQueries = RyftQueryHelper.prepareQueries(queries, queryOptions, sc.getConf, preferredPartitions)
     new RyftRDDSimple(sc, preparedQueries, TransformFunctions.toRyftData)
   }
 
   def ryftPairRDDStructured[Map](queries: List[RecordQuery],
                                  queryOptions: RyftQueryOptions) = {
-    val preparedQueries = RyftQueryHelper.prepareQueries(queries, queryOptions, sc.getConf)
+    val preparedQueries = RyftQueryHelper.prepareQueries(queries, queryOptions, sc.getConf, _ => Set.empty[String])
     new RyftPairRDD(sc, preparedQueries, TransformFunctions.noTransform)
   }
 
   def ryftPairRDD[RyftData](queries: List[SimpleQuery],
                             queryOptions: RyftQueryOptions) = {
-    val preparedQueries = RyftQueryHelper.prepareQueries(queries, queryOptions, sc.getConf)
+    val preparedQueries = RyftQueryHelper.prepareQueries(queries, queryOptions, sc.getConf, _ => Set.empty[String])
     new RyftPairRDD(sc, preparedQueries, TransformFunctions.toRyftData)
   }
 }

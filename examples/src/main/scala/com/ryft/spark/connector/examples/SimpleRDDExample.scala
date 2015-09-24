@@ -42,7 +42,7 @@ object SimpleRDDExample extends App with Logging {
     .setMaster("local[2]")
     .set("spark.locality.wait", "120s")
     .set("spark.locality.wait.node", "120s")
-    .set("ryft.rest.url", "http://52.20.99.136:8765,http://52.20.99.136:9000")
+    .set("spark.ryft.rest.url", "http://52.20.99.136:8765")
 
   val sc = new SparkContext(sparkConf)
 

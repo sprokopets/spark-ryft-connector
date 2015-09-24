@@ -45,9 +45,12 @@ import com.ryft.spark.connector.domain._
 private [connector] object RyftQueryHelper {
 
   def prepareQueries[A : TypeTag](queries: List[A],
-                           queryOptions: RyftQueryOptions,
-                           sparkConf: SparkConf): Iterable[(String, String, List[String])] = {
-    val urlOption = sparkConf.getOption("ryft.rest.url")
+                                  queryOptions: RyftQueryOptions,
+                                  sparkConf: SparkConf,
+                                  preferredLocations: Any => Set[String]):
+  Iterable[(String, String, Set[String])] = {
+
+    val urlOption = sparkConf.getOption("spark.ryft.rest.url")
     val ryftRestUrls =
       if (urlOption.nonEmpty) urlOption.get
         .split(",")
@@ -60,21 +63,23 @@ private [connector] object RyftQueryHelper {
         case t if t =:= typeOf[SimpleQuery] =>
           queries.map(q => {
             val ryftQuery = queryToString(q.asInstanceOf[SimpleQuery])
-            (q.asInstanceOf[SimpleQuery].queries.mkString(","),
+            val simpleQuery = q.asInstanceOf[SimpleQuery]
+            (simpleQuery.queries.mkString(","),
               ryftRestUrl + s"/search?query=($ryftQuery)"+ queryOptionsToString(queryOptions),
-              Nil) //FIXME: Nil now because partitioning not implemented yet
+              preferredLocations(simpleQuery)) //FIXME: Nil now because partitioning not implemented yet
           })
 
         case t if t =:= typeOf[RecordQuery] =>
           queries.map(q => {
-            val ryftQuery = queryToString(q.asInstanceOf[RecordQuery])
+            val recordQuery = q.asInstanceOf[RecordQuery]
+            val ryftQuery = queryToString(recordQuery)
             val files = new StringBuilder
             queryOptions.files.foreach(f => files.append(s"&files=$f"))
             s"$files"
 
             (ryftQuery,
               ryftRestUrl + s"/search?query=($ryftQuery)$files&format=xml",
-              Nil) //FIXME: Nil now because partitioning not implemented yet
+              preferredLocations(recordQuery)) //FIXME: Nil now because partitioning not implemented yet
           })
 
         case _ =>
