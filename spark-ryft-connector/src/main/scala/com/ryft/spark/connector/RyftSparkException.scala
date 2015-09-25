@@ -30,45 +30,6 @@
 
 package com.ryft.spark.connector
 
-import com.ryft.spark.connector.domain.query._
-import com.ryft.spark.connector._
-
-import scala.collection.mutable
-
-class RyftQueryBuilder(query: String,
-                       inputSpecifier: InputSpecifier,
-                       logicalOperator: LogicalOperator,
-                       relationalOperator: RelationalOperator) {
-
-  private val recordQueries = mutable.ListBuffer.empty[RyftRecord]
-
-  def this(inputSpecifier: InputSpecifier,
-           relationalOperator: RelationalOperator,
-           query: String) = {
-    this(query, inputSpecifier, empty, relationalOperator)
-    recordQueries += new RyftRecord(query, inputSpecifier, empty, relationalOperator)
-  }
-
-  def and(inputSpecifier: InputSpecifier,
-          relationalOperator: RelationalOperator,
-          query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.and, relationalOperator)
-    this
-  }
-
-  def or(inputSpecifier: InputSpecifier,
-         relationalOperator: RelationalOperator,
-         query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.or, relationalOperator)
-    this
-  }
-
-  def xor(inputSpecifier: InputSpecifier,
-          relationalOperator: RelationalOperator,
-          query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.xor, relationalOperator)
-    this
-  }
-
-  def build = new RyftRecordQuery(recordQueries.toList)
+case class RyftSparkException(msg: String)
+  extends RuntimeException(msg) {
 }

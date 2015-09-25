@@ -31,7 +31,7 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery
+import com.ryft.spark.connector.query.SimpleQuery
 import org.apache.spark.{SparkContext, SparkConf}
 import com.ryft.spark.connector._
 
@@ -52,7 +52,7 @@ object StreamExample extends App {
       lines(r.nextInt(lines.size))
     }).toList
 
-    val queries = words.map(w => SimpleRyftQuery(List(w)))
+    val queries = words.map(w => SimpleQuery(List(w)))
     val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
     val count = ryftRDD.countByKey()
     println("\n\ncount: "+count.mkString("\n"))

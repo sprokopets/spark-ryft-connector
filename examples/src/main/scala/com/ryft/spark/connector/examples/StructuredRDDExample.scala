@@ -30,31 +30,31 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.RyftQueryBuilder
-import com.ryft.spark.connector.domain.query.{contains, recordField}
+import com.ryft.spark.connector.domain.{contains, recordField, RyftQueryOptions}
+import com.ryft.spark.connector.query.{SingleQuery, GenericQuery, SimpleQuery, RecordQuery}
 import org.apache.spark.{SparkContext, SparkConf, Logging}
 
 import com.ryft.spark.connector._
+
+import scala.annotation.tailrec
 
 object StructuredRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
     .setMaster("local[2]")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
-//    .set("ryft.rest.url", "http://52.20.99.136:8765,http://52.20.99.136:9000")
+    .set("spark.ryft.rest.url", "http://52.20.99.136:9000")
 
   val sc = new SparkContext(sparkConf)
 
-  val ryftQuery = new RyftQueryBuilder(recordField("date"), contains, "04/15/2015")
-      .and(recordField("desc"), contains, "VEHICLE")
-    .or(recordField("date"), contains, "04/14/2015")
-      .and(recordField("desc"), contains, "VEHICLE")
-    .build
+  val query =
+    RecordQuery(
+      RecordQuery(recordField("desc"), contains, "VEHICLE")
+      .or(recordField("desc"), contains, "BIKE")
+      .or(recordField("desc"), contains, "MOTO"))
+    .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
 
   val ryftOptions = RyftQueryOptions(List("*.pcrime"), 0, 0)
-  val ryftRDD = sc.ryftRDDStructured(List(ryftQuery),ryftOptions)
+  val ryftRDD = sc.ryftRDDStructured(List(query),ryftOptions)
 
   val countByDescription = ryftRDD.map(m => {
     (m.get("LocationDescription"), 1)

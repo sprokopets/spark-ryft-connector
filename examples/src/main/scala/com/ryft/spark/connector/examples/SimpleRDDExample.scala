@@ -31,7 +31,7 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery
+import com.ryft.spark.connector.query.SimpleQuery
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 
 import com.ryft.spark.connector._
@@ -42,11 +42,11 @@ object SimpleRDDExample extends App with Logging {
     .setMaster("local[2]")
     .set("spark.locality.wait", "120s")
     .set("spark.locality.wait.node", "120s")
-    .set("ryft.rest.url", "http://52.20.99.136:8765,http://52.20.99.136:9000")
+    .set("spark.ryft.rest.url", "http://52.20.99.136:8765")
 
   val sc = new SparkContext(sparkConf)
 
-  val query = SimpleRyftQuery(List("Jones"))
+  val query = SimpleQuery(List("Jones"))
   val metaInfo = RyftQueryOptions(List("passengers.txt"), 10, 0)
 
   val ryftRDD = sc.ryftRDDSimple(List(query),metaInfo)

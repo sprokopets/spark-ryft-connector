@@ -30,16 +30,15 @@
 
 package com.ryft.spark.connector.examples;
 
-import com.ryft.spark.connector.RyftQueryBuilder;
 import com.ryft.spark.connector.domain.RyftQueryOptions;
-import com.ryft.spark.connector.domain.query.RyftRecordQuery;
+import com.ryft.spark.connector.domain.recordField;
 import com.ryft.spark.connector.japi.RyftJavaUtil;
 import com.ryft.spark.connector.japi.SparkContextJavaFunctions;
 import com.ryft.spark.connector.japi.rdd.RyftJavaRDD;
+import com.ryft.spark.connector.query.RecordQuery;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
-import com.ryft.spark.connector.domain.query.*;
-import com.ryft.spark.connector.domain.query.contains$;
+import com.ryft.spark.connector.domain.contains$;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,11 +62,10 @@ public class StructuredRDDExampleJ {
         final SparkContext sc = new SparkContext(sparkConf);
         final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
 
-        final RyftRecordQuery query = new RyftQueryBuilder(new recordField("date"), contains$.MODULE$, "04/15/2015")
+        final RecordQuery query = new RecordQuery(new recordField("date"), contains$.MODULE$, "04/15/2015")
             .and(new recordField("desc"), contains$.MODULE$, "VEHICLE")
         .or(new recordField("date"), contains$.MODULE$, "04/14/2015")
-            .and(new recordField("desc"), contains$.MODULE$, "VEHICLE")
-        .build();
+            .and(new recordField("desc"), contains$.MODULE$, "VEHICLE");
 
         final RyftJavaRDD<HashMap.HashTrieMap<String,String>> ryftRDDStructured =
                 javaFunctions.ryftRDDStructured(query,

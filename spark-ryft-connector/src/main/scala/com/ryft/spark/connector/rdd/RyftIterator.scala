@@ -30,9 +30,8 @@
 
 package com.ryft.spark.connector.rdd
 
-import java.net.URL
+import java.net.{HttpURLConnection, URL}
 
-import com.fasterxml.jackson.core.JsonFactory
 import com.ryft.spark.connector.util.SimpleJsonParser
 import org.apache.spark.{Partition, Logging}
 import org.msgpack.jackson.dataformat.MessagePackFactory
@@ -43,8 +42,13 @@ abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] =
   val partition = split.asInstanceOf[RyftRDDPartition]
   logDebug(s"Compute partition, idx: ${partition.idx}")
 
-  val connection = new URL(partition.query).openConnection()
+  val connection = new URL(partition.query)
+    .openConnection()
+    .asInstanceOf[HttpURLConnection]
+
   connection.setRequestProperty("Accept", "application/msgpack")
+  connection.setRequestProperty("Transfer-Encoding","chunked")
+
   logDebug("Used request header: \nAccept: application/msgpack")
 
   val is = connection.getInputStream
@@ -61,7 +65,7 @@ abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] =
       case accum: Map[String, String] =>
         accumulator = json.asInstanceOf[Map[String,String]]
         true
-      case _                           =>
+      case _                          =>
         logDebug(s"Iterator processing ended for partition with idx: $idx")
         is.close()
         false

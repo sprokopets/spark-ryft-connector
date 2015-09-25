@@ -33,8 +33,8 @@ package com.ryft.spark.connector.japi;
 import com.ryft.spark.connector.SparkContextFunctions;
 import com.ryft.spark.connector.domain.RyftData;
 import com.ryft.spark.connector.domain.RyftQueryOptions;
-import com.ryft.spark.connector.domain.query.RyftRecordQuery;
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery;
+import com.ryft.spark.connector.query.RecordQuery;
+import com.ryft.spark.connector.query.SimpleQuery;
 import com.ryft.spark.connector.japi.rdd.RyftJavaRDD;
 import com.ryft.spark.connector.japi.rdd.RyftPairJavaRDD;
 import com.ryft.spark.connector.rdd.RyftPairRDD;
@@ -62,15 +62,17 @@ public class SparkContextJavaFunctions {
         return new RyftJavaRDD<>(rdd, classTag);
     }
 
-    public <T> RyftJavaRDD<T> ryftRDDSimple(SimpleRyftQuery ryftQuery,
+    public <T> RyftJavaRDD<T> ryftRDDSimple(SimpleQuery ryftQuery,
                                             RyftQueryOptions queryOptions) {
-        final RyftRDDSimple ryftRDDSimple = sparkContextFunctions.ryftRDDSimple(toScalaList(ryftQuery), queryOptions);
+        //TODO: null added need to pass stub function
+        final RyftRDDSimple ryftRDDSimple = sparkContextFunctions.ryftRDDSimple(toScalaList(ryftQuery), queryOptions,null);
         return toJavaRDD(ryftRDDSimple, RyftData.class);
     }
 
-    public RyftJavaRDD ryftRDDStructured(RyftRecordQuery ryftQuery,
+    public RyftJavaRDD ryftRDDStructured(RecordQuery ryftQuery,
                                                 RyftQueryOptions queryOptions) {
-        final RyftRDDSimple ryftRDDSimple = sparkContextFunctions.ryftRDDStructured(toScalaList(ryftQuery), queryOptions);
+        //TODO: null added need to pass stub function
+        final RyftRDDSimple ryftRDDSimple = sparkContextFunctions.ryftRDDStructured(toScalaList(ryftQuery), queryOptions, null);
         return toJavaRDD(ryftRDDSimple, HashMap.HashTrieMap.class);
     }
 
@@ -79,7 +81,7 @@ public class SparkContextJavaFunctions {
         return new RyftPairJavaRDD<>(rdd, classTag);
     }
 
-    public <T> RyftPairJavaRDD<Tuple2<String, T>> ryftPairJavaRDD(SimpleRyftQuery ryftQuery,
+    public <T> RyftPairJavaRDD<Tuple2<String, T>> ryftPairJavaRDD(SimpleQuery ryftQuery,
                                                                   RyftQueryOptions queryOptions) {
         final RyftPairRDD ryftPairRDD = sparkContextFunctions.ryftPairRDD(toScalaList(ryftQuery), queryOptions);
         return toJavaRDD(ryftPairRDD, RyftData.class);
