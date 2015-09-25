@@ -41,7 +41,8 @@ import scala.annotation.tailrec
 object StructuredRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
-//    .setMaster("local[2]")
+    .setMaster("local[2]")
+    .set("spark.ryft.rest.url", "http://52.20.99.136:9000")
 
   val sc = new SparkContext(sparkConf)
 
@@ -49,7 +50,7 @@ object StructuredRDDExample extends App with Logging {
     RecordQuery(
       RecordQuery(recordField("desc"), contains, "VEHICLE")
       .or(recordField("desc"), contains, "BIKE")
-      .or(recordField("desc"), contains, "1MOTO"))
+      .or(recordField("desc"), contains, "MOTO"))
     .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
 
   val ryftOptions = RyftQueryOptions(List("*.pcrime"), 0, 0)
