@@ -28,41 +28,6 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector.query
 
-import com.ryft.spark.connector.domain.{contains, recordField, RyftQueryOptions}
-import com.ryft.spark.connector.query.{SingleQuery, GenericQuery, SimpleQuery, RecordQuery}
-import com.ryft.spark.connector.rdd.{RyftRDDSimple, RyftRDD}
-import org.apache.spark.{SparkContext, SparkConf, Logging}
-
-import com.ryft.spark.connector._
-
-import scala.annotation.tailrec
-
-object StructuredRDDExample extends App with Logging {
-  val sparkConf = new SparkConf()
-    .setAppName("SimplePairRDDExample")
-    .setMaster("local[2]")
-    .set("spark.ryft.rest.url", "http://52.20.99.136:9000")
-
-  val sc = new SparkContext(sparkConf)
-
-  val query =
-    RecordQuery(
-      RecordQuery(recordField("desc"), contains, "VEHICLE")
-      .or(recordField("desc"), contains, "BIKE")
-      .or(recordField("desc"), contains, "MOTO"))
-    .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
-
-  val ryftOptions = RyftQueryOptions(List("*.pcrime"), 0, 0)
-  val ryftRDD = sc.ryftRDD(List(query),ryftOptions)
-
-  val countByDescription = ryftRDD.asInstanceOf[RyftRDDSimple[Map[String, String]]]
-    .map(m => {
-      (m.get("LocationDescription"), 1)
-    }).reduceByKey(_ + _)
-
-  countByDescription.foreach({case(key, count) =>
-    println("key: "+key.get+" count: "+count)
-  })
-}
+trait RyftQuery

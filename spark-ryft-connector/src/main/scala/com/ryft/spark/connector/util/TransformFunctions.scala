@@ -36,7 +36,6 @@ import org.apache.commons.codec.binary.Base64
 object TransformFunctions {
   def toRyftData(obj: Map[String, Any]) = {
     val objS = obj.asInstanceOf[Map[String, String]]
-    //FIXME: _index hardcoded now, need to be able parametrize it
     val index = obj.get("_index").get.asInstanceOf[Map[String,String]]
     RyftData(index("file"),
       index("offset").toInt,

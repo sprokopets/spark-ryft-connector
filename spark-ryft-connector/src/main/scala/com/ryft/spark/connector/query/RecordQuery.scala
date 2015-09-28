@@ -33,7 +33,7 @@ package com.ryft.spark.connector.query
 import com.ryft.spark.connector.domain
 import com.ryft.spark.connector.domain._
 
-private[connector] sealed trait GenericQuery
+private[connector] sealed trait GenericQuery extends RyftQuery
 
 private[connector] case class SingleQuery(lo: LogicalOperator,
                        is: InputSpecifier,

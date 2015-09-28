@@ -40,7 +40,8 @@ lazy val commonSettings = Seq(
     val logbackVersion    = "1.0.12"
     val json4sVersion     = "3.3.0.RC3"
     val twitter4jVersion  = "3.0.3"
-    val sprayJson         = "1.3.2"
+    val sprayJsonVersion  = "1.3.2"
+    val msgpackVersion    = "0.7.0-p9"
     Seq(
       "com.typesafe.akka"       %  "akka-actor_2.10"              % akkaVersion,
       "org.apache.spark"        %  "spark-core_2.10"              % sparkVersion % "provided",
@@ -52,8 +53,8 @@ lazy val commonSettings = Seq(
       "org.json4s"              %  "json4s-native_2.10"           % json4sVersion,
       "org.json4s"              %  "json4s-core_2.10"             % json4sVersion,
       "org.twitter4j"           %  "twitter4j-stream"             % twitter4jVersion,
-      "io.spray"                %  "spray-json_2.10"              % sprayJson,
-      "org.msgpack"             %  "jackson-dataformat-msgpack"   % "0.7.0-p9"
+      "io.spray"                %  "spray-json_2.10"              % sprayJsonVersion,
+      "org.msgpack"             %  "jackson-dataformat-msgpack"   % msgpackVersion
     )}
 )
 

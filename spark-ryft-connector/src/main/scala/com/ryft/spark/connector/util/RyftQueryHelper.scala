@@ -32,9 +32,10 @@ package com.ryft.spark.connector.util
 
 import com.ryft.spark.connector.RyftSparkException
 import com.ryft.spark.connector.config.ConfigHolder
-import com.ryft.spark.connector.query.{GenericQuery, SingleQuery, RecordQuery, SimpleQuery}
-import org.apache.spark.SparkConf
+import com.ryft.spark.connector.query._
+import org.apache.spark.{Logging, SparkConf}
 import scala.annotation.tailrec
+import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
 import scala.collection.JavaConversions._
 import com.ryft.spark.connector.domain._
@@ -42,58 +43,37 @@ import com.ryft.spark.connector.domain._
 /**
  * Provides helper functions specific for Ryft
  */
-private [connector] object RyftQueryHelper {
+private [connector] object RyftQueryHelper extends Logging{
+  def queryAsString[RyftQuery: TypeTag](ryftQuery: RyftQuery, queryOptions: RyftQueryOptions) = {
+    val ryftQueryS =
+      ryftQuery match {
+        case sq: SimpleQuery =>
+          val queryString = queryToString(sq)
+          (queryString, queryToString(sq) + queryOptionsToString(queryOptions))
 
-  def prepareQueries[A : TypeTag](queries: List[A],
-                                  queryOptions: RyftQueryOptions,
-                                  sparkConf: SparkConf,
-                                  preferredLocations: Any => Set[String]):
-  Iterable[(String, String, Set[String])] = {
-
-    val urlOption = sparkConf.getOption("spark.ryft.rest.url")
-    val ryftRestUrls =
-      if (urlOption.nonEmpty) urlOption.get
-        .split(",")
-        .map(url => url.trim)
-        .toList
-      else ConfigHolder.ryftRestUrl.toList
-
-    ryftRestUrls.flatMap(ryftRestUrl => {
-      typeOf[A] match {
-        case t if t =:= typeOf[SimpleQuery] =>
-          queries.map(q => {
-            val ryftQuery = queryToString(q.asInstanceOf[SimpleQuery])
-            val simpleQuery = q.asInstanceOf[SimpleQuery]
-            (simpleQuery.queries.mkString(","),
-              ryftRestUrl + s"/search?query=($ryftQuery)"+ queryOptionsToString(queryOptions),
-              preferredLocations(simpleQuery)) //FIXME: Nil now because partitioning not implemented yet
-          })
-
-        case t if t =:= typeOf[RecordQuery] =>
-          queries.map(q => {
-            val recordQuery = q.asInstanceOf[RecordQuery]
-            val ryftQuery = queryToString(recordQuery)
-            val files = new StringBuilder
-            queryOptions.files.foreach(f => files.append(s"&files=$f"))
-            s"$files"
-
-            (ryftQuery,
-              ryftRestUrl + s"/search?query=($ryftQuery)$files&format=xml",
-              preferredLocations(recordQuery)) //FIXME: Nil now because partitioning not implemented yet
-          })
+        case rq: RecordQuery =>
+          val queryString = queryToString(rq)
+          val files = new StringBuilder
+          queryOptions.files.foreach(f => files.append(s"&files=$f"))
+          (queryString, queryToString(rq) + files + "&format=xml")
 
         case _ =>
-          throw new RyftSparkException("Unable to handle given type")
+          val msg = "Unable to convert RyftQuery to string. " +
+            "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
+          logWarning(msg)
+          throw new RyftSparkException(msg)
       }
-    })
+
+    (ryftQueryS._1, s"/search?query=${ryftQueryS._2}")
   }
 
-  private def queryToString(query: SimpleQuery) = {
+  private def queryToString(query: SimpleQuery): String = {
     val queries = query.queries
     val preparedQueries = new StringBuilder(s"(${rawText.value}%20${contains.value}%20%22${queries.head}%22)")
     if (queries.tail.nonEmpty) {
       queries.tail.foreach(q => preparedQueries.append(s"OR(${rawText.value}%20${contains.value}%20%22$q%22)"))
     }
+    preparedQueries.toString()
   }
 
   private def queryToString(query: RecordQuery): String = {
@@ -121,7 +101,6 @@ private [connector] object RyftQueryHelper {
     }
   }
 
-  //TODO: need to think make it as lazy val, create once
   private def queryOptionsToString(queryOptions: RyftQueryOptions): String = {
     val files = new StringBuilder
     queryOptions.files.foreach(f => files.append(s"&files=$f"))

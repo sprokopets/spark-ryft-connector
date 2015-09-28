@@ -31,8 +31,9 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector._
-import com.ryft.spark.connector.domain.RyftQueryOptions
+import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
 import com.ryft.spark.connector.query.SimpleQuery
+import com.ryft.spark.connector.rdd.RyftPairRDD
 
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.twitter.TwitterUtils
@@ -79,7 +80,7 @@ object TwitterExample extends App with Logging {
       val queries = tags.map(t => SimpleQuery(List(t)))
       val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
 
-      val count = ryftRDD.countByKey()
+      val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
       logInfo("\n"+count.mkString("\n"))
     }
   })
