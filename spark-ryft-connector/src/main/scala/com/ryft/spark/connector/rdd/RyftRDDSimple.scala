@@ -43,9 +43,11 @@ class RyftRDDSimple[T: ClassTag](@transient sc: SparkContext,
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val partition = split.asInstanceOf[RyftRDDPartition]
+    val idx = partition.idx
 
-    logDebug(s"Start processing iterator for partition with idx: ${partition.idx}")
     new RyftIterator[T,T](partition, transform) {
+      logDebug(s"Start processing iterator for partition with idx: $idx")
+
       override def next(): T = {
         if (accumulator.isEmpty) {
           logWarning("Next element does not exist")
