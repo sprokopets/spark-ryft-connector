@@ -48,11 +48,11 @@ private [connector] object RyftQueryHelper extends Logging{
     val ryftQueryS =
       ryftQuery match {
         case sq: SimpleQuery =>
-          val queryString = queryToString(sq)
+          val queryString = s"(${queryToString(sq)})"
           (queryString, queryToString(sq) + queryOptionsToString(queryOptions))
 
         case rq: RecordQuery =>
-          val queryString = queryToString(rq)
+          val queryString = s"(${queryToString(rq)})"
           val files = new StringBuilder
           queryOptions.files.foreach(f => files.append(s"&files=$f"))
           (queryString, queryToString(rq) + files + "&format=xml")

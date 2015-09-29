@@ -31,7 +31,7 @@
 package com.ryft.spark.connector.examples;
 
 import com.ryft.spark.connector.domain.RyftQueryOptions;
-import com.ryft.spark.connector.query.SimpleQuery;
+import com.ryft.spark.connector.query.SimpleQuery$;
 import com.ryft.spark.connector.japi.RyftJavaUtil;
 import com.ryft.spark.connector.japi.SparkContextJavaFunctions;
 import com.ryft.spark.connector.japi.rdd.RyftPairJavaRDD;
@@ -56,7 +56,7 @@ public class SimplePairRDDExampleJ {
         final int surrounding = 10;
 
         final RyftPairJavaRDD rdd = javaFunctions.ryftPairJavaRDD(
-                new SimpleQuery("jones"),
+                SimpleQuery$.MODULE$.apply("jones"),
                 new RyftQueryOptions("passengers.txt", surrounding, fuzziness));
 
         logger.info("count: {}", rdd.count());

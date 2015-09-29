@@ -31,13 +31,11 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.{contains, recordField, RyftQueryOptions}
-import com.ryft.spark.connector.query.{SingleQuery, GenericQuery, SimpleQuery, RecordQuery}
-import com.ryft.spark.connector.rdd.{RyftRDDSimple, RyftRDD}
+import com.ryft.spark.connector.query.RecordQuery
+import com.ryft.spark.connector.rdd.RyftRDDSimple
 import org.apache.spark.{SparkContext, SparkConf, Logging}
 
 import com.ryft.spark.connector._
-
-import scala.annotation.tailrec
 
 object StructuredRDDExample extends App with Logging {
   val sparkConf = new SparkConf()

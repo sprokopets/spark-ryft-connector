@@ -72,13 +72,15 @@ lazy val sparkRyftConnectorSettings = Seq(
     val scalaTestVersion  = "3.0.0-M7"
     val sprayVersion      = "1.3.3"
     val specs2Version     = "2.4.15"
+    val junitVersion      = "4.12"
     Seq(
       "com.fasterxml.jackson.module"  % "jackson-module-scala_2.10" % jacksonVersion,
       "org.scalatest"                 % "scalatest_2.10"            % scalaTestVersion % "test",
       "io.spray"                      % "spray-can_2.10"            % sprayVersion     % "test",
       "io.spray"                      % "spray-routing_2.10"        % sprayVersion     % "test",
       "io.spray"                      % "spray-testkit_2.10"        % sprayVersion     % "test",
-      "org.specs2"                    % "specs2-core_2.10"          % specs2Version    % "test"
+      "org.specs2"                    % "specs2-core_2.10"          % specs2Version    % "test",
+      "junit"                         % "junit"                     % junitVersion     % "test"
     )}
 )
 
