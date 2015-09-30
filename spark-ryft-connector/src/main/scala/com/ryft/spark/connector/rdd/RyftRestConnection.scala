@@ -28,29 +28,22 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector.rdd
 
-import com.ryft.spark.connector.domain.{RyftData, recordField, RyftQueryOptions}
-import com.ryft.spark.connector.query.SimpleQuery
-import com.ryft.spark.connector.rdd.RyftPairRDD
-import org.apache.spark.{Logging, SparkContext, SparkConf}
-import com.ryft.spark.connector._
+import java.net.{HttpURLConnection, URL}
 
-object SimplePairRDDExample extends App with Logging {
-  val sparkConf = new SparkConf()
-    .setAppName("SimplePairRDDExample")
-    .setMaster("local[2]")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
-    .set("spark.ryft.rest.url", "http://52.20.99.136:9000")
+import org.apache.spark.Logging
 
-  val sc = new SparkContext(sparkConf)
+case class RyftRestConnection(url: String) extends Logging {
+  private val connection = new URL(url)
+    .openConnection()
+    .asInstanceOf[HttpURLConnection]
 
-  val query = SimpleQuery(List("october"))
+  connection.setRequestProperty("Accept", "application/msgpack")
+  connection.setRequestProperty("Transfer-Encoding","chunked")
 
-  val metaInfo = RyftQueryOptions(List("reddit/*"), 10, 0)
-  val ryftRDD = sc.ryftRDD(List(query),metaInfo)
+  logDebug("Used request header: \nAccept: application/msgpack")
+  logDebug("Used request header: \nTransfer-Encoding: chunked")
 
-  val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
-  logInfo("count: \n"+count.mkString("\n"))
+  def getInputStream = connection.getInputStream
 }

@@ -30,7 +30,6 @@
 
 package com.ryft.spark.connector.config
 
-import com.ryft.spark.connector.domain.RyftPartition
 import com.typesafe.config._
 
 import scala.collection.JavaConverters._
@@ -43,7 +42,7 @@ class ConfigHolder {
   val conifgFactory = ConfigFactory.load()
     .getConfig("spark-ryft-connector")
 
-  lazy val ryftRestUrl = Try(conifgFactory.getStringList("spark.ryft.rest.url"))
+  lazy val ryftRestUrl = Try(conifgFactory.getStringList("spark.ryft.rest.url").asScala)
     .getOrElse(throw new RuntimeException("Ryft REST URL must be set in your configuration. " +
     "Specify it via SparkConf or application.conf with spark.ryft.rest.url key."))
 }

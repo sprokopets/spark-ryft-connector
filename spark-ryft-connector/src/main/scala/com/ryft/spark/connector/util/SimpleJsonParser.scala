@@ -30,89 +30,78 @@
 
 package com.ryft.spark.connector.util
 
-import com.fasterxml.jackson.core.{JsonParser, JsonToken}
+import com.fasterxml.jackson.core.{JsonToken, JsonParser}
+import com.ryft.spark.connector.RyftSparkException
+import org.apache.spark.Logging
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
-object SimpleJsonParser {
-
-  def hasNext(parser: JsonParser) = {
-    if (parser.getCurrentToken == null) parser.nextToken()
-
-    parser.getCurrentToken != null &&
-      parser.getCurrentToken != JsonToken.END_ARRAY
-  }
+object SimpleJsonParser extends Logging {
 
   def parseJson(parser: JsonParser) = {
-    if (parser.getCurrentToken == null) parser.nextToken()
-
-    parser.getCurrentToken match {
+    parser.nextToken match {
       case JsonToken.START_OBJECT =>
-        parseJsonObj(parser)
+        parserObjAcc(parser, mutable.Map.empty[String,Any])
+      case JsonToken.FIELD_NAME   => //FIXME: workaround, somehow we lost START_OBJECT
+        parserObjAcc(parser, mutable.Map.empty[String,Any])
       case JsonToken.START_ARRAY  =>
-        parser.nextToken() //TODO: skip
-        if (parser.getCurrentToken == null) parser.nextToken()
-        if (parser.getCurrentToken != JsonToken.END_ARRAY) parseJsonObj(parser)
-      case _                      => //TODO: something wrong, handle case
+        parseArrayAcc(parser, mutable.ListBuffer.empty[Map[String,Any]])
+      case null                   =>
+        logInfo("Finished parsing stream")
+      case _                      =>
+        while(true) {
+          println(parser.nextToken())
+        }
+        val msg = s"Unable to parse current token: ${parser.getCurrentToken}"
+        logWarning(msg)
+        throw new RyftSparkException(msg)
     }
   }
 
-//  @tailrec TODO: make it tailrec
-  def parseJsonObj(parser: JsonParser): Map[String, Any] = {
-    if (parser.getCurrentToken == null) parser.nextToken()
+  @tailrec
+  private def parserObjAcc(parser: JsonParser, acc: mutable.Map[String,Any]): Map[String, Any]  = {
+    if (parser.getCurrentToken == JsonToken.START_OBJECT) parser.nextToken
 
-    assert(parser.getCurrentToken == JsonToken.START_OBJECT)
-    parser.nextToken()
-
-    val map = mutable.Map.empty[String, Any]
-    while (parser.getCurrentToken != JsonToken.END_OBJECT) {
-      assert(parser.getCurrentToken == JsonToken.FIELD_NAME)
+    if (parser.getCurrentToken == JsonToken.END_OBJECT) {
+      parser.nextToken
+      acc.toMap
+    } else {
       val fieldName = parser.getCurrentName
-      parser.nextToken()
+      parser.nextToken
 
-      val fieldValue = parser.getCurrentToken match {
-        case JsonToken.VALUE_STRING   =>
-          val fieldValue = parser.getValueAsString
-          parser.nextToken()
-          fieldValue
+      if (parser.getCurrentToken == JsonToken.START_OBJECT) {
+        val nestedObj = parseNestedObj(parser)
+        acc.put(fieldName, nestedObj)
+        parserObjAcc(parser, acc)
+      } else if (parser.getCurrentToken == JsonToken.START_ARRAY) {
+        val arrayVal = parseArrayAcc(parser, mutable.ListBuffer.empty[Map[String,Any]])
+        acc.put(fieldName, arrayVal)
+        parserObjAcc(parser, acc)
+      } else {
+        val filedValue = parser.getValueAsString
+        parser.nextToken
 
-        case JsonToken.VALUE_NUMBER_INT =>
-          val fieldValue = parser.getValueAsString
-          parser.nextToken()
-          fieldValue
-
-        case JsonToken.VALUE_NULL =>
-          val fieldValue = parser.getValueAsString
-          parser.nextToken()
-          fieldValue
-
-        case JsonToken.START_OBJECT   =>
-          parseJsonObj(parser)
-        case JsonToken.START_ARRAY    =>
-          parseJsonArray(parser)
-        case _ => println("!error") //TODO: need normal reaction, check other cases?
+        acc.put(fieldName, filedValue)
+        parserObjAcc(parser, acc)
       }
-      map += (fieldName -> fieldValue)
     }
-    parser.nextToken()
-
-    map.toMap
   }
 
-  def parseJsonArray(parser: JsonParser) = {
-    if (parser.getCurrentToken == null) parser.nextToken()
+  @tailrec
+  private def parseArrayAcc(parser: JsonParser, acc: mutable.ListBuffer[Map[String, Any]]): List[Map[String, Any]] = {
+    if (parser.getCurrentToken == JsonToken.START_ARRAY) parser.nextToken
 
-    assert(parser.getCurrentToken == JsonToken.START_ARRAY)
-    parser.nextToken()
-
-    val buffer = new ListBuffer[Map[String,Any]]
-    while (parser.getCurrentToken != JsonToken.END_ARRAY) {
-      assert(parser.getCurrentToken == JsonToken.START_OBJECT)
-      buffer += parseJsonObj(parser)
+    if (parser.getCurrentToken == JsonToken.END_ARRAY) {
+      parser.nextToken
+      acc.toList
+    } else {
+      acc += parserObjAcc(parser, mutable.Map.empty[String,Any])
+      parseArrayAcc(parser, acc)
     }
-    parser.nextToken() //read out JsonToken.END_ARRAY
-    buffer.toList
+  }
+
+  private def parseNestedObj(parser: JsonParser) = {
+    parserObjAcc(parser, mutable.Map.empty[String,Any])
   }
 }

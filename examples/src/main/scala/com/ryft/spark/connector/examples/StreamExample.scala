@@ -30,8 +30,9 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.RyftQueryOptions
+import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
 import com.ryft.spark.connector.query.SimpleQuery
+import com.ryft.spark.connector.rdd.RyftPairRDD
 import org.apache.spark.{SparkContext, SparkConf}
 import com.ryft.spark.connector._
 
@@ -54,7 +55,7 @@ object StreamExample extends App {
 
     val queries = words.map(w => SimpleQuery(List(w)))
     val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
-    val count = ryftRDD.countByKey()
+    val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
     println("\n\ncount: "+count.mkString("\n"))
     Thread.sleep(10000)
   }

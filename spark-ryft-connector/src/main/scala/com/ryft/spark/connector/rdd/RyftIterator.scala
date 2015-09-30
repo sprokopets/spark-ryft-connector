@@ -30,8 +30,6 @@
 
 package com.ryft.spark.connector.rdd
 
-import java.net.{HttpURLConnection, URL}
-
 import com.ryft.spark.connector.util.SimpleJsonParser
 import org.apache.spark.{Partition, Logging}
 import org.msgpack.jackson.dataformat.MessagePackFactory
@@ -39,34 +37,22 @@ import org.msgpack.jackson.dataformat.MessagePackFactory
 abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] => T)
   extends Iterator[R] with Logging {
 
-  val partition = split.asInstanceOf[RyftRDDPartition]
+  private val partition = split.asInstanceOf[RyftRDDPartition]
   logDebug(s"Compute partition, idx: ${partition.idx}")
 
-  val connection = new URL(partition.query)
-    .openConnection()
-    .asInstanceOf[HttpURLConnection]
+  private val is = RyftRestConnection(partition.query).getInputStream
+  private val parser = new MessagePackFactory().createParser(is)
 
-  connection.setRequestProperty("Accept", "application/msgpack")
-  connection.setRequestProperty("Transfer-Encoding","chunked")
-
-  logDebug("Used request header: \nAccept: application/msgpack")
-
-  val is = connection.getInputStream
-  val parser = new MessagePackFactory().createParser(is)
-
-  val key = partition.key
-  val idx = partition.idx
-
-  var accumulator = Map.empty[String,String]
+  protected var accumulator = Map.empty[String,String]
 
   override def hasNext: Boolean = {
     val json = SimpleJsonParser.parseJson(parser)
     json match {
-      case accum: Map[String, String] =>
+      case acc: Map[String, String] =>
         accumulator = json.asInstanceOf[Map[String,String]]
         true
-      case _                          =>
-        logDebug(s"Iterator processing ended for partition with idx: $idx")
+      case _                        =>
+        logDebug(s"Iterator processing ended for partition with idx: ${partition.idx}")
         is.close()
         false
     }

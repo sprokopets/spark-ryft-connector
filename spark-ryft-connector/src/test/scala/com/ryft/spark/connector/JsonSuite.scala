@@ -34,7 +34,6 @@ import java.io.ByteArrayInputStream
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ryft.spark.connector.util.SimpleJsonParser
-import org.msgpack.jackson.dataformat.MessagePackFactory
 import org.scalatest.FunSuite
 
 class JsonSuite extends FunSuite {
@@ -92,7 +91,7 @@ class JsonSuite extends FunSuite {
     val lines = scala.io.Source.fromInputStream(is).getLines()
     val parser = new ObjectMapper().getFactory.createParser(lines.mkString("\n"))
 
-    val jsonMap = SimpleJsonParser.parseJsonObj(parser)
+    val jsonMap = SimpleJsonParser.parseJson(parser).asInstanceOf[Map[String,String]]
     assert(jsonMap != null)
     assert(jsonMap.nonEmpty)
     assert(jsonMap("field1").equals("value1"))
@@ -104,13 +103,12 @@ class JsonSuite extends FunSuite {
     val lines = scala.io.Source.fromInputStream(is).getLines()
     val parser = new ObjectMapper().getFactory.createParser(lines.mkString("\n"))
 
-    val jsonList = SimpleJsonParser.parseJsonArray(parser)
+    val jsonList = SimpleJsonParser.parseJson(parser).asInstanceOf[List[Map[String,String]]]
     assert(jsonList != null)
     assert(jsonList.nonEmpty)
 
     val firstMap = jsonList.head
     assert(firstMap != null)
-    assert(firstMap.nonEmpty)
     assert(firstMap("field1").equals("value1"))
     assert(firstMap("field2").equals("value2"))
 
@@ -126,7 +124,7 @@ class JsonSuite extends FunSuite {
     val lines = scala.io.Source.fromInputStream(is).getLines()
     val parser = new ObjectMapper().getFactory.createParser(lines.mkString("\n"))
 
-    val jsonMap = SimpleJsonParser.parseJsonObj(parser)
+    val jsonMap = SimpleJsonParser.parseJson(parser).asInstanceOf[Map[String,String]]
     assert(jsonMap != null)
     assert(jsonMap.nonEmpty)
     assert(jsonMap("field1").equals("value1"))
@@ -143,7 +141,7 @@ class JsonSuite extends FunSuite {
     val lines = scala.io.Source.fromInputStream(is).getLines()
     val parser = new ObjectMapper().getFactory.createParser(lines.mkString("\n"))
 
-    val jsonMap = SimpleJsonParser.parseJsonObj(parser)
+    val jsonMap = SimpleJsonParser.parseJson(parser).asInstanceOf[Map[String,Any]]
     assert(jsonMap != null)
     assert(jsonMap.nonEmpty)
     assert(jsonMap("field1").equals("value1"))
@@ -168,8 +166,7 @@ class JsonSuite extends FunSuite {
     assert(second("field21").equals("value22"))
   }
 
-  //FIXME: cast not working
-  ignore("test parse complex json") {
+  test("test parse complex json") {
     val is = new ByteArrayInputStream(complexJson.getBytes)
     val lines = scala.io.Source.fromInputStream(is).getLines()
     val parser = new ObjectMapper().getFactory.createParser(lines.mkString("\n"))
