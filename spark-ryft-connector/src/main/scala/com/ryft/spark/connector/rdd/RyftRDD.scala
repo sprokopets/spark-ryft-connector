@@ -43,6 +43,11 @@ import DefaultJsonProtocol._
 
 import scala.reflect.ClassTag
 
+/**
+ * RDD representing of a RyftQuery.
+ *
+ * This class is the main entry point for analyzing data using Ryft with Spark.
+ */
 abstract class RyftRDD [T: ClassTag, R](@transient sc: SparkContext,
                                queries: Iterable[(String,String,Set[String])])
   extends RDD[T](sc, Nil) {

@@ -30,30 +30,25 @@
 
 package com.ryft.spark.connector.util
 
-import java.util.Map.Entry
-
 import com.ryft.spark.connector.RyftSparkException
+import com.ryft.spark.connector.config.ConfigHolder
 import com.ryft.spark.connector.query._
-import com.typesafe.config.{ConfigObject, ConfigValue, ConfigFactory}
 import org.apache.spark.Logging
-import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 
+/**
+ * Default Partitioning mechanism.
+ */
 private [connector] object PartitioningHelper extends Logging {
-  private lazy val config = ConfigFactory.load().getConfig("spark-ryft-connector")
-  private lazy val partitions: Map[String, String] = {
-    val list: Iterable[ConfigObject] = config.getObjectList("partitions").asScala
-    (for {
-      item: ConfigObject <- list
-      entry: Entry[String, ConfigValue] <- item.entrySet().asScala
-      url = entry.getKey
-      pattern = entry.getValue.unwrapped().toString
-    } yield (url, pattern)).toMap
-  }
 
+  /**
+   * Chooses partitions according to first letter of the query
+   * @param recordQuery Search query
+   * @return Set of partitions for query
+   */
   def byFirstLetter(recordQuery: RyftQuery) = {
     recordQuery match {
       case sq: SimpleQuery => sq.queries.flatMap(q => choosePartitionsQuery(q)).toSet
@@ -93,7 +88,7 @@ private [connector] object PartitioningHelper extends Logging {
   }
 
   private def choosePartitionsQuery(query: String): Set[String] = {
-    partitions.filter({
+    ConfigHolder.partitions.filter({
       case(url, pattern) => pattern.isEmpty || {
         val Pattern = pattern.r.unanchored
         query match {

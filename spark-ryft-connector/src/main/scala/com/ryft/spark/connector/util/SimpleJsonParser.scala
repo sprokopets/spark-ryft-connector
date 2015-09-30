@@ -50,9 +50,6 @@ object SimpleJsonParser extends Logging {
       case null                   =>
         logInfo("Finished parsing stream")
       case _                      =>
-        while(true) {
-          println(parser.nextToken())
-        }
         val msg = s"Unable to parse current token: ${parser.getCurrentToken}"
         logWarning(msg)
         throw new RyftSparkException(msg)

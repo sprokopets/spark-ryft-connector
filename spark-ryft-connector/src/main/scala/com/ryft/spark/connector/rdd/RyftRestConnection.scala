@@ -34,6 +34,14 @@ import java.net.{HttpURLConnection, URL}
 
 import org.apache.spark.Logging
 
+/**
+ * Represents simple connection to Ryft Rest service.
+ * By default add headers:
+ *  Accept: application/msgpack
+ *  Transfer-Encoding: chunked
+ *
+ * @param url Ryft Rest query
+ */
 case class RyftRestConnection(url: String) extends Logging {
   private val connection = new URL(url)
     .openConnection()

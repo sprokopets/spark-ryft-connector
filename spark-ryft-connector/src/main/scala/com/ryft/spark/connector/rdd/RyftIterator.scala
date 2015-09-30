@@ -34,6 +34,14 @@ import com.ryft.spark.connector.util.SimpleJsonParser
 import org.apache.spark.{Partition, Logging}
 import org.msgpack.jackson.dataformat.MessagePackFactory
 
+/**
+ * An iterator that allows to iterate through the stream of JSON objects.
+ * Used MessagePackFactory parser by default.
+ *
+ * `hasNext` reads next element from the stream to accumulator
+ * and returns true if element exists
+ *
+ */
 abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] => T)
   extends Iterator[R] with Logging {
 
@@ -51,7 +59,7 @@ abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] =
       case acc: Map[String, String] =>
         accumulator = json.asInstanceOf[Map[String,String]]
         true
-      case _                        =>
+      case _ =>
         logDebug(s"Iterator processing ended for partition with idx: ${partition.idx}")
         is.close()
         false

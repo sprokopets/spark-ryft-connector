@@ -32,7 +32,7 @@ package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.{RyftData, recordField, RyftQueryOptions}
 import com.ryft.spark.connector.query.SimpleQuery
-import com.ryft.spark.connector.rdd.{RyftRDDSimple, RyftPairRDD}
+import com.ryft.spark.connector.rdd.RyftPairRDD
 import com.ryft.spark.connector.util.PartitioningHelper
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 import com.ryft.spark.connector._

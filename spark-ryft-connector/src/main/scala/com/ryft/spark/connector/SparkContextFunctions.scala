@@ -39,10 +39,21 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
  * Provides Ryft-specific methods on [[org.apache.spark.SparkContext SparkContext]]
- *
  */
 class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
 
+  /**
+   * Creates a view of search queries to Ryft as `RyftRDDSimple`
+   *
+   * This method is made available on [[org.apache.spark.SparkContext SparkContext]] by importing
+   * `com.ryft.spark.connector._`
+   *
+   * @param queries Search queries
+   * @param queryOptions Query specific options
+   * @param choosePartitions Function provides partitions for `RyftQuery`
+   * @param preferredLocations Function provided spark preferred nodes for `RyftQuery`
+   * @return
+   */
   def ryftRDD(queries: List[RyftQuery],
               queryOptions: RyftQueryOptions,
               choosePartitions: RyftQuery => Set[String] = _ => Set.empty[String],
@@ -60,6 +71,17 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
     }
   }
 
+  /**
+   * Creates a view of search queries to Ryft as `RyftPairRDD`
+   *
+   * This method is made available on [[org.apache.spark.SparkContext SparkContext]] by importing
+   * `com.ryft.spark.connector._`
+   *
+   * @param queries Search queries
+   * @param queryOptions Query specific options
+   * @param choosePartitions Function provides partitions for `RyftQuery`
+   * @param preferredLocations Function provided spark preferred nodes for `RyftQuery`
+   */
   def ryftPairRDD(queries: List[RyftQuery],
                   queryOptions: RyftQueryOptions,
                   choosePartitions: RyftQuery => Set[String] = _ => Set.empty[String],
@@ -77,6 +99,15 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
     }
   }
 
+  /**
+   * Prepare queries needed to create RyftRDDs
+   *
+   * @param queries Search queries
+   * @param queryOptions Query specific options
+   * @param choosePartitions Function provides partitions for `RyftQuery`
+   * @param preferredLocations Function provided spark preferred nodes for `RyftQuery`
+   * @return Sequence of queries Iterable[(Key,RyftUrl,Set[PreferredLocations])]
+   */
   private def prepareQueries(queries: List[RyftQuery],
                              queryOptions: RyftQueryOptions,
                              choosePartitions: RyftQuery => Set[String],
