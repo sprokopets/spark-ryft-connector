@@ -66,7 +66,7 @@ public class SparkContextJavaFunctions {
                                             RyftQueryOptions queryOptions) {
         //TODO: null added need to pass stub function
         final RyftRDDSimple ryftRDDSimple = (RyftRDDSimple) sparkContextFunctions.ryftRDD(toScalaList(ryftQuery),
-                queryOptions, null);
+                queryOptions, null, null);
         return toJavaRDD(ryftRDDSimple, RyftData.class);
     }
 
@@ -74,7 +74,7 @@ public class SparkContextJavaFunctions {
                                                 RyftQueryOptions queryOptions) {
         //TODO: null added need to pass stub function
         final RyftRDDSimple ryftRDDSimple = (RyftRDDSimple) sparkContextFunctions.ryftRDD(toScalaList(ryftQuery),
-                queryOptions, null);
+                queryOptions, null, null);
         return toJavaRDD(ryftRDDSimple, HashMap.HashTrieMap.class);
     }
 
@@ -86,7 +86,7 @@ public class SparkContextJavaFunctions {
     public <T> RyftPairJavaRDD<Tuple2<String, T>> ryftPairJavaRDD(SimpleQuery ryftQuery,
                                                                   RyftQueryOptions queryOptions) {
         final RyftPairRDD ryftPairRDD = (RyftPairRDD) sparkContextFunctions.ryftPairRDD(toScalaList(ryftQuery),
-                queryOptions, null);
+                queryOptions, null, null);
         return toJavaRDD(ryftPairRDD, RyftData.class);
     }
 }

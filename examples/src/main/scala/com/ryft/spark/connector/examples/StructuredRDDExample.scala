@@ -33,6 +33,7 @@ package com.ryft.spark.connector.examples
 import com.ryft.spark.connector.domain.{contains, recordField, RyftQueryOptions}
 import com.ryft.spark.connector.query.RecordQuery
 import com.ryft.spark.connector.rdd.RyftRDDSimple
+import com.ryft.spark.connector.util.PartitioningHelper
 import org.apache.spark.{SparkContext, SparkConf, Logging}
 
 import com.ryft.spark.connector._
@@ -53,7 +54,7 @@ object StructuredRDDExample extends App with Logging {
     .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
 
   val ryftOptions = RyftQueryOptions(List("*.pcrime"), 0, 0)
-  val ryftRDD = sc.ryftRDD(List(query),ryftOptions)
+  val ryftRDD = sc.ryftRDD(List(query),ryftOptions, PartitioningHelper.byFirstLetter)
 
   val countByDescription = ryftRDD.asInstanceOf[RyftRDDSimple[Map[String, String]]]
     .map(m => {
