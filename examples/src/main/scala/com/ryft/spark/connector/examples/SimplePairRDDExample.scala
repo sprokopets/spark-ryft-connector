@@ -32,7 +32,8 @@ package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.{RyftData, recordField, RyftQueryOptions}
 import com.ryft.spark.connector.query.SimpleQuery
-import com.ryft.spark.connector.rdd.RyftPairRDD
+import com.ryft.spark.connector.rdd.{RyftRDDSimple, RyftPairRDD}
+import com.ryft.spark.connector.util.PartitioningHelper
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 import com.ryft.spark.connector._
 
@@ -46,10 +47,10 @@ object SimplePairRDDExample extends App with Logging {
 
   val sc = new SparkContext(sparkConf)
 
-  val query = SimpleQuery(List("october"))
+  val query = SimpleQuery(List("october","april"))
 
   val metaInfo = RyftQueryOptions(List("reddit/*"), 10, 0)
-  val ryftRDD = sc.ryftRDD(List(query),metaInfo)
+  val ryftRDD = sc.ryftPairRDD(List(query),metaInfo,PartitioningHelper.byFirstLetter)
 
   val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
   logInfo("count: \n"+count.mkString("\n"))

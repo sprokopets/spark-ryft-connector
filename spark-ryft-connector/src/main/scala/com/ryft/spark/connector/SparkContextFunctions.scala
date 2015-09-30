@@ -85,10 +85,13 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
     queries.flatMap(q => {
       val ryftQueryS = RyftQueryHelper.queryAsString(q, queryOptions)
       val pls = preferredLocations(q)
+      val partitions = choosePartitions(q)
 
-      Some(choosePartitions(q))
-        .getOrElse(restUrls)
-        .map(url => (ryftQueryS._1, url + ryftQueryS._2, pls))
+      val urls =
+        if (partitions.nonEmpty) partitions
+        else restUrls
+
+      urls.map(url => (ryftQueryS._1, url + ryftQueryS._2, pls))
     })
   }
 

@@ -33,14 +33,16 @@ package com.ryft.spark.connector.util
 import java.util.Map.Entry
 
 import com.ryft.spark.connector.RyftSparkException
-import com.ryft.spark.connector.query.{RyftQuery, SingleQuery, GenericQuery, RecordQuery}
-import com.typesafe.config.{ConfigObject, ConfigValue, ConfigFactory, Config}
+import com.ryft.spark.connector.query._
+import com.typesafe.config.{ConfigObject, ConfigValue, ConfigFactory}
+import org.apache.spark.Logging
 import scala.collection.JavaConverters._
+import scala.reflect.runtime.universe._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-private [connector] object PartitioningHelper {
+private [connector] object PartitioningHelper extends Logging {
   private lazy val config = ConfigFactory.load().getConfig("spark-ryft-connector")
   private lazy val partitions: Map[String, String] = {
     val list: Iterable[ConfigObject] = config.getObjectList("partitions").asScala
@@ -53,14 +55,20 @@ private [connector] object PartitioningHelper {
   }
 
   def byFirstLetter(recordQuery: RyftQuery) = {
-    choosePartitions(recordQuery.asInstanceOf[RecordQuery].queries,
-      mutable.Set.empty[String])
-    .toSet
+    recordQuery match {
+      case sq: SimpleQuery => sq.queries.flatMap(q => choosePartitionsQuery(q)).toSet
+      case rq: RecordQuery => choosePartitions(rq.queries, mutable.Set.empty[String])
+      case _ =>
+        val msg = "Unable to find partitions for RyftQuery. " +
+          "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
+        logWarning(msg)
+        throw new RyftSparkException(msg)
+    }
   }
 
   @tailrec
-  private def choosePartitions(queries: List[GenericQuery], acc: mutable.Set[String]): mutable.Set[String] = {
-    if (queries.isEmpty) acc
+  private def choosePartitions(queries: List[GenericQuery], acc: mutable.Set[String]): Set[String] = {
+    if (queries.isEmpty) acc.toSet
     else {
       queries.head match {
         case sq: SingleQuery =>
@@ -71,7 +79,11 @@ private [connector] object PartitioningHelper {
           acc ++= recordQueryPartitions(rq)
           choosePartitions(queries.tail, acc)
 
-        case _               => throw new RyftSparkException("Unexpected Ryft Query Type")
+        case _ =>
+          val msg = "Unable to choose partitions. " +
+            "Unexpected Ryft Query Type: " + typeOf[GenericQuery]
+          logWarning(msg)
+          throw new RyftSparkException("Unexpected Ryft Query Type")
       }
     }
   }

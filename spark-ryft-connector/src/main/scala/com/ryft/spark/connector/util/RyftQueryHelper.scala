@@ -31,13 +31,10 @@
 package com.ryft.spark.connector.util
 
 import com.ryft.spark.connector.RyftSparkException
-import com.ryft.spark.connector.config.ConfigHolder
 import com.ryft.spark.connector.query._
-import org.apache.spark.{Logging, SparkConf}
+import org.apache.spark.Logging
 import scala.annotation.tailrec
-import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
-import scala.collection.JavaConversions._
 import com.ryft.spark.connector.domain._
 
 /**
