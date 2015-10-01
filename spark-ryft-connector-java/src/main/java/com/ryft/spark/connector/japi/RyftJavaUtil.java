@@ -30,7 +30,11 @@
 
 package com.ryft.spark.connector.japi;
 
+import com.ryft.spark.connector.query.RyftQuery;
+import com.ryft.spark.connector.util.JavaApiHelper;
 import org.apache.spark.SparkContext;
+import scala.collection.immutable.Set;
+import scala.runtime.AbstractFunction1;
 
 public class RyftJavaUtil {
     /**
@@ -40,4 +44,12 @@ public class RyftJavaUtil {
     public static SparkContextJavaFunctions javaFunctions(SparkContext sparkContext) {
         return new SparkContextJavaFunctions(sparkContext);
     }
+
+    public static final AbstractFunction1<RyftQuery, Set<String>> ryftQueryToEmptySet =
+            new AbstractFunction1<RyftQuery, Set<String>>() {
+                @Override
+                public Set<String> apply(RyftQuery v1) {
+                    return JavaApiHelper.<String>scalaEmptySet();
+                }
+            };
 }

@@ -30,6 +30,8 @@
 
 package com.ryft.spark.connector.util
 
+import com.ryft.spark.connector.query.RyftQuery
+
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
 
@@ -44,4 +46,8 @@ object JavaApiHelper {
   def toScalaList[T](elem: T): List[T] = List(elem)
 
   def toScalaList[T](elems: java.util.List[T]): List[T] = elems.asScala.toList
+
+  def scalaEmptySet[T] = Set.empty[T]
+
+  def ryftQueryToEmptySet(ryftQuery: RyftQuery) = Set.empty[String]
 }

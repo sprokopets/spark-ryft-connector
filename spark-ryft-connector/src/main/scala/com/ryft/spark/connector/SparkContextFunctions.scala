@@ -54,10 +54,12 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
    * @param preferredLocations Function provided spark preferred nodes for `RyftQuery`
    * @return
    */
-  def ryftRDD(queries: List[RyftQuery],
-              queryOptions: RyftQueryOptions,
-              choosePartitions: RyftQuery => Set[String] = _ => Set.empty[String],
-              preferredLocations: RyftQuery => Set[String] = _ => Set.empty[String]) = {
+  def ryftRDD(
+      queries: List[RyftQuery],
+      queryOptions: RyftQueryOptions,
+      choosePartitions: RyftQuery => Set[String] = _ => Set.empty[String],
+      preferredLocations: RyftQuery => Set[String] = _ => Set.empty[String]) = {
+    
     val preparedQueries = prepareQueries(queries, queryOptions, choosePartitions, preferredLocations)
     queries match {
       case (sqList: SimpleQuery) :: tail =>
