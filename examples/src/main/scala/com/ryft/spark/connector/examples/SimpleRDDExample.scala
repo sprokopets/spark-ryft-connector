@@ -40,7 +40,6 @@ import com.ryft.spark.connector._
 object SimpleRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
-    .setMaster("local[2]")
     .set("spark.locality.wait", "120s")
     .set("spark.locality.wait.node", "120s")
     .set("spark.ryft.rest.url", "http://52.20.99.136:8765")

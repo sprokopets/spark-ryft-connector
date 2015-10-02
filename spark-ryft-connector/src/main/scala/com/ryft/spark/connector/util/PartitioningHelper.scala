@@ -42,7 +42,7 @@ import scala.collection.mutable
 /**
  * Default Partitioning mechanism.
  */
-private [connector] object PartitioningHelper extends Logging {
+object PartitioningHelper extends Logging {
 
   /**
    * Chooses partitions according to first letter of the query
