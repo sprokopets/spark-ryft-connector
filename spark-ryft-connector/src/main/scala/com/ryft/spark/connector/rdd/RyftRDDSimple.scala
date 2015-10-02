@@ -36,16 +36,18 @@ import org.apache.spark.annotation.DeveloperApi
 import scala.reflect.ClassTag
 
 class RyftRDDSimple[T: ClassTag](@transient sc: SparkContext,
-                                    queries: Iterable[(String,String,Seq[String])],
+                                    queries: Iterable[(String,String,Set[String])],
                                     transform: Map[String, Any] => T)
-  extends RyftRDD[T, T](sc, queries, transform) {
+  extends RyftRDD[T, T](sc, queries) {
 
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val partition = split.asInstanceOf[RyftRDDPartition]
+    val idx = partition.idx
 
-    logDebug(s"Start processing iterator for partition with idx: ${partition.idx}")
     new RyftIterator[T,T](partition, transform) {
+      logDebug(s"Start processing iterator for partition with idx: $idx")
+
       override def next(): T = {
         if (accumulator.isEmpty) {
           logWarning("Next element does not exist")

@@ -43,9 +43,13 @@ import DefaultJsonProtocol._
 
 import scala.reflect.ClassTag
 
+/**
+ * RDD representing of a RyftQuery.
+ *
+ * This class is the main entry point for analyzing data using Ryft with Spark.
+ */
 abstract class RyftRDD [T: ClassTag, R](@transient sc: SparkContext,
-                               queries: Iterable[(String,String,Seq[String])],
-                               transform: Map[String, Any] => R)
+                               queries: Iterable[(String,String,Set[String])])
   extends RDD[T](sc, Nil) {
 
   @DeveloperApi
@@ -65,7 +69,7 @@ abstract class RyftRDD [T: ClassTag, R](@transient sc: SparkContext,
       "\npartitions idx: %s" +
       "\nlocations: %s")
       .format(partition.idx, partition.preferredLocations.mkString("\n")))
-    partition.preferredLocations
+    partition.preferredLocations.toSeq
   }
 }
 
@@ -80,7 +84,7 @@ abstract class RyftRDD [T: ClassTag, R](@transient sc: SparkContext,
 case class RyftRDDPartition(idx: Int,
                             key: String,
                             query: String,
-                            preferredLocations: Seq[String])
+                            preferredLocations: Set[String])
   extends Partition {
   override def index: Int = idx
   override def toString: String = JsObject(
@@ -96,7 +100,7 @@ case class RyftRDDPartition(idx: Int,
  * Simple `RyftRDD` partitioner to prepare partitions
  */
 class RyftRDDPartitioner {
-  def partitions(queries: Iterable[(String,String, Seq[String])]): Array[Partition] = {
+  def partitions(queries: Iterable[(String,String, Set[String])]): Array[Partition] = {
     (for((query,i) <- queries.zipWithIndex) yield {
       new RyftRDDPartition(i, query._1, query._2, query._3)
     }).toArray[Partition]

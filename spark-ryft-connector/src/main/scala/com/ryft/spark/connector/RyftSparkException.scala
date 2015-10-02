@@ -28,11 +28,8 @@
  * ============
  */
 
-package com.ryft.spark.connector.domain.query
+package com.ryft.spark.connector
 
-case class RyftRecordQuery(queries: Seq[RyftRecord])
-
-case class RyftRecord(query: String,
-                      inputSpecifier: InputSpecifier,
-                      logicalOperator: LogicalOperator,
-                      relationalOperator: RelationalOperator)
+case class RyftSparkException(msg: String)
+  extends RuntimeException(msg) {
+}

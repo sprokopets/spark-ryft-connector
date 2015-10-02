@@ -30,28 +30,28 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.domain.query.{contains, recordField, SimpleRyftQuery}
+import com.ryft.spark.connector.domain.{RyftData, recordField, RyftQueryOptions}
+import com.ryft.spark.connector.query.SimpleQuery
+import com.ryft.spark.connector.rdd.RyftPairRDD
+import com.ryft.spark.connector.util.PartitioningHelper
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 import com.ryft.spark.connector._
 
 object SimplePairRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
-    .setMaster("local[2]")
     .set("spark.locality.wait", "120s")
     .set("spark.locality.wait.node", "120s")
+    .set("spark.ryft.rest.url", "http://52.20.99.136:9000")
+    .set("spark.task.maxFailures", "5")
 
   val sc = new SparkContext(sparkConf)
 
-  val query = SimpleRyftQuery(List("october"))
-
-  val ryftQuery = new RyftQueryBuilder(recordField("primaryType"), domain.query.equals, "NARCOTICS")
-    .build
+  val query = SimpleQuery(List("october","april"))
 
   val metaInfo = RyftQueryOptions(List("reddit/*"), 10, 0)
-  val ryftRDD = sc.ryftPairRDD(List(query),metaInfo)
+  val ryftRDD = sc.ryftPairRDD(List(query),metaInfo,PartitioningHelper.byFirstLetter)
 
-  val count = ryftRDD.countByKey()
+  val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
   logInfo("count: \n"+count.mkString("\n"))
 }

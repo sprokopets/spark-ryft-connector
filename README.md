@@ -14,6 +14,63 @@ sbt clean assembly
 You can find jar:
 ../spark-ryft-connector/target/scala-2.10/
 
+# Ryft Query mechanism
+
+There are two main types of RyftQuery:
+ 1. SimpleQuery
+ 2. RecordQuery
+
+SimpleQuery represents RAW_TEXT search for one or more search queries. For this type of query used only CONTAINS relational operator. For two or more search queries used OR logical operator.
+For example:
+we need to search for 3 SimpleQuery ‘query0’, ‘query1’, ‘query2’
+```sh
+SimpleQuery(List(“query0”,”query1”,”query2”))
+```
+It will be transformed to:
+
+```sh
+((RAW_TEXT CONTAINS “query0”)OR(RAW_TEXT CONTAINS ”query1”)OR(RAW_TEXT CONTAINS “query2"))
+```
+RecordQuery is a bit complex. It allows to use Ryft RECORD and RECORD.field queries. You can use method chaining mechanism to create nested queries.
+
+For example:
+
+- search for all records where field desc contains ‘VEHICLE’
+
+```sh
+RecordQuery(recordField("desc"), contains, "VEHICLE") -> (RECORD.desc CONTAINS “VEHICLE”) 
+```
+- search for all records which contains ‘VEHICLE’ in any field
+
+```sh
+RecordQuery(record, contains, "VEHICLE") -> (RECORD CONTAINS “VEHICLE”) 
+```
+
+RecordQuery allows you to combine two or more queries via method chaining:
+
+```sh
+RecordQuery(recordField("desc"), contains, "VEHICLE")
+      .or(recordField("desc"), contains, "BIKE")  
+     
+    
+((RECORD.desc CONTAINS “VEHICLE”)OR(RECORD.desc CONTAINS “BIKE”))
+```
+
+or even complex nested queries:
+
+```sh
+RecordQuery(
+      RecordQuery(recordField("desc"), contains, "VEHICLE")
+      .or(recordField("desc"), contains, "BIKE")
+      .or(recordField("desc"), contains, "MOTO"))
+    .and(RecordQuery(recordField("date"), contains, "04/15/2015"))  
+     
+    
+(((RECORD.desc CONTAINS “VEHICLE”)OR(RECORD.desc CONTAINS “BIKE”)OR(RECORD.desc CONTAINS “MOTO”))AND
+(RECORD.date CONTAINS “04/15/2015”))
+```
+
+
 #License
 Ryft-Customized BSD License
 Copyright (c) 2015, Ryft Systems, Inc.

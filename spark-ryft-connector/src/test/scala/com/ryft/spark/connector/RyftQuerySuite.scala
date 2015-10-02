@@ -30,46 +30,62 @@
 
 package com.ryft.spark.connector
 
-import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.domain.query._
-import com.ryft.spark.connector.util.RyftHelper
-import org.scalatest.FunSuite
+import com.ryft.spark.connector.domain.{record, RyftQueryOptions, contains, recordField}
+import com.ryft.spark.connector.query.{SimpleQuery, RecordQuery}
+import com.ryft.spark.connector.util.RyftQueryHelper
+import org.scalatest.junit.JUnitSuite
+import org.junit.Test
+import org.junit.Assert._
 
-class RyftQuerySuite extends FunSuite {
-  val fuzziness: Byte = 2
+class RyftQuerySuite extends JUnitSuite {
 
-  test("test ryft query builder") {
-    val query = "?query=((RECORD%20CONTAINS%20%22alex%22)AND(RECORD%20EQUALS%20%22john%22)" +
-      "OR(RECORD%20NOT_EQUALS%20%22martin%22))&files=passengers.txt&surrounding=10&fuzziness=2"
-    val ryftQuery = new RyftQueryBuilder(record, contains, "alex")
-      .and(record, domain.query.equals, "john")
-      .or(record, notEquals, "martin")
-      .build
+  val queryOptions = RyftQueryOptions(List("*.pcrime"), 0, 0)
 
-    val metaInfo = new RyftQueryOptions(List("passengers.txt"), 10, fuzziness)
-    assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
+  @Test def testSimpleQuery() {
+    val query = SimpleQuery("query0")
+
+    val queryString = "((RAW_TEXT%20CONTAINS%20%22query0%22))"
+
+    val ryftQuery = RyftQueryHelper.queryAsString(query, queryOptions)
+    assertEquals(queryString, ryftQuery._1)
   }
 
-  test("test ryft query builder record field") {
-    val query = "?query=((RECORD.field1%20CONTAINS%20%22alex%22))&files=passengers.txt&surrounding=10&fuzziness=2"
-    val ryftQuery = new RyftQueryBuilder(recordField("field1"), contains, "alex")
-      .build
-    val metaInfo = new RyftQueryOptions(List("passengers.txt"), 10, fuzziness)
-    assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
+  @Test def testSimpleQueryComplex() {
+    val query = SimpleQuery(List("query0","query1","query2"))
+
+    val queryString = "((RAW_TEXT%20CONTAINS%20%22query0%22)OR(RAW_TEXT%20CONTAINS%20%22query1%22)OR" +
+      "(RAW_TEXT%20CONTAINS%20%22query2%22))"
+
+    val ryftQuery = RyftQueryHelper.queryAsString(query, queryOptions)
+    assertEquals(queryString, ryftQuery._1)
   }
 
-  test("test simple query") {
-    val query = "?query=((RAW_TEXT%20CONTAINS%20%22Michael%22))&files=passengers.txt&surrounding=10&fuzziness=2"
-    val metaInfo = new RyftQueryOptions(List("passengers.txt"), 10, fuzziness)
-    val ryftQuery = new SimpleRyftQuery(List("Michael"))
-    assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
+  @Test def testRyftRecordQuery() {
+    val query =
+      RecordQuery(record, contains, "VEHICLE")
+        .and(recordField("date"), contains, "04/15/2015")
+
+    val queryString = "((RECORD%20CONTAINS%20%22VEHICLE%22)AND" +
+      "(RECORD.date%20CONTAINS%20%2204/15/2015%22))"
+
+    val ryftQuery = RyftQueryHelper.queryAsString(query, queryOptions)
+    assertEquals(queryString, ryftQuery._1)
   }
 
-  test("test few simple queries") {
-    val query = "?query=((RAW_TEXT%20CONTAINS%20%22Michael%22)" +
-      "OR(RAW_TEXT%20CONTAINS%20%22Alex%22))&files=passengers.txt&surrounding=10&fuzziness=2"
-    val metaInfo = new RyftQueryOptions(List("passengers.txt"), 10, fuzziness)
-    val ryftQuery = new SimpleRyftQuery(List("Michael","Alex"))
-    assert(query.equals(RyftHelper.queryToString(ryftQuery, metaInfo)))
+  @Test def testRyftRecordQueryComplex() {
+    val query =
+      RecordQuery(
+        RecordQuery(recordField("desc"), contains, "VEHICLE")
+          .or(recordField("desc"), contains, "BIKE")
+          .or(recordField("desc"), contains, "MOTO"))
+        .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
+
+    val queryString = "(((RECORD.desc%20CONTAINS%20%22VEHICLE%22)OR" +
+      "(RECORD.desc%20CONTAINS%20%22BIKE%22)OR" +
+      "(RECORD.desc%20CONTAINS%20%22MOTO%22))AND" +
+      "((RECORD.date%20CONTAINS%20%2204/15/2015%22)))"
+
+    val ryftQuery = RyftQueryHelper.queryAsString(query, queryOptions)
+    assertEquals(queryString, ryftQuery._1)
   }
 }

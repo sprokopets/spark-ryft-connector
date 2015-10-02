@@ -30,22 +30,33 @@
 
 package com.ryft.spark.connector.config
 
-import com.ryft.spark.connector.domain.RyftPartition
+import java.util.Map.Entry
+
 import com.typesafe.config._
 
 import scala.collection.JavaConverters._
 import scala.util.Try
 
 /**
- * Simple config holder. Provides access to partitions configuration.
+ * Represents single entry point to application config
  */
 class ConfigHolder {
   val conifgFactory = ConfigFactory.load()
     .getConfig("spark-ryft-connector")
 
-  lazy val ryftRestUrl = Try(conifgFactory.getStringList("ryft.rest.url"))
+  lazy val ryftRestUrl = Try(conifgFactory.getStringList("spark.ryft.rest.url").asScala)
     .getOrElse(throw new RuntimeException("Ryft REST URL must be set in your configuration. " +
-    "Specify it via SparkConf or application.conf with ryft.rest.url key."))
+    "Specify it via SparkConf or application.conf with spark.ryft.rest.url key."))
+
+  lazy val partitions: Map[String, String] = {
+    val list: Iterable[ConfigObject] = conifgFactory.getObjectList("partitions").asScala
+    (for {
+      item: ConfigObject <- list
+      entry: Entry[String, ConfigValue] <- item.entrySet().asScala
+      url = entry.getKey
+      pattern = entry.getValue.unwrapped().toString
+    } yield (url, pattern)).toMap
+  }
 }
 
 object ConfigHolder extends ConfigHolder

@@ -31,14 +31,23 @@
 package com.ryft.spark.connector.examples;
 
 import com.ryft.spark.connector.domain.RyftQueryOptions;
-import com.ryft.spark.connector.domain.query.SimpleRyftQuery;
+import com.ryft.spark.connector.query.RyftQuery;
+import com.ryft.spark.connector.query.SimpleQuery;
+import com.ryft.spark.connector.query.SimpleQuery$;
 import com.ryft.spark.connector.japi.RyftJavaUtil;
 import com.ryft.spark.connector.japi.SparkContextJavaFunctions;
 import com.ryft.spark.connector.japi.rdd.RyftPairJavaRDD;
+import com.ryft.spark.connector.util.JavaApiHelper;
+import com.ryft.spark.connector.util.PartitioningHelper$;
+import com.ryft.spark.connector.util.RyftQueryHelper$;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.collection.Set$;
+import scala.collection.immutable.Set;
+
+import java.util.Collections;
 
 public class SimplePairRDDExampleJ {
     private static final Logger logger = LoggerFactory.getLogger(SimplePairRDDExampleJ.class);
@@ -54,10 +63,13 @@ public class SimplePairRDDExampleJ {
         final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
         final byte fuzziness = 0;
         final int surrounding = 10;
+        final SimpleQuery query = SimpleQuery$.MODULE$.apply("jones");
 
         final RyftPairJavaRDD rdd = javaFunctions.ryftPairJavaRDD(
-                new SimpleRyftQuery("jones"),
-                new RyftQueryOptions("passengers.txt", surrounding, fuzziness));
+                query,
+                new RyftQueryOptions("passengers.txt", surrounding, fuzziness),
+                RyftJavaUtil.ryftQueryToEmptySet,
+                RyftJavaUtil.ryftQueryToEmptySet);
 
         logger.info("count: {}", rdd.count());
     }

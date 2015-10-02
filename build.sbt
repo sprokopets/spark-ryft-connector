@@ -28,7 +28,7 @@
 
 import sbt.Keys._
 
-version := "0.1.0"
+version := "0.2.0"
 
 lazy val commonSettings = Seq(
   organization        := "com.ryft",
@@ -40,7 +40,8 @@ lazy val commonSettings = Seq(
     val logbackVersion    = "1.0.12"
     val json4sVersion     = "3.3.0.RC3"
     val twitter4jVersion  = "3.0.3"
-    val sprayJson         = "1.3.2"
+    val sprayJsonVersion  = "1.3.2"
+    val msgpackVersion    = "0.7.0-p9"
     Seq(
       "com.typesafe.akka"       %  "akka-actor_2.10"              % akkaVersion,
       "org.apache.spark"        %  "spark-core_2.10"              % sparkVersion % "provided",
@@ -52,8 +53,8 @@ lazy val commonSettings = Seq(
       "org.json4s"              %  "json4s-native_2.10"           % json4sVersion,
       "org.json4s"              %  "json4s-core_2.10"             % json4sVersion,
       "org.twitter4j"           %  "twitter4j-stream"             % twitter4jVersion,
-      "io.spray"                %  "spray-json_2.10"              % sprayJson,
-      "org.msgpack"             %  "jackson-dataformat-msgpack"   % "0.7.0-p9"
+      "io.spray"                %  "spray-json_2.10"              % sprayJsonVersion,
+      "org.msgpack"             %  "jackson-dataformat-msgpack"   % msgpackVersion
     )}
 )
 
@@ -71,13 +72,15 @@ lazy val sparkRyftConnectorSettings = Seq(
     val scalaTestVersion  = "3.0.0-M7"
     val sprayVersion      = "1.3.3"
     val specs2Version     = "2.4.15"
+    val junitVersion      = "4.12"
     Seq(
       "com.fasterxml.jackson.module"  % "jackson-module-scala_2.10" % jacksonVersion,
       "org.scalatest"                 % "scalatest_2.10"            % scalaTestVersion % "test",
       "io.spray"                      % "spray-can_2.10"            % sprayVersion     % "test",
       "io.spray"                      % "spray-routing_2.10"        % sprayVersion     % "test",
       "io.spray"                      % "spray-testkit_2.10"        % sprayVersion     % "test",
-      "org.specs2"                    % "specs2-core_2.10"          % specs2Version    % "test"
+      "org.specs2"                    % "specs2-core_2.10"          % specs2Version    % "test",
+      "junit"                         % "junit"                     % junitVersion     % "test"
     )}
 )
 

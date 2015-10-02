@@ -28,24 +28,6 @@
  * ============
  */
 
-package com.ryft.spark.connector.domain.query
+package com.ryft.spark.connector.query
 
-sealed trait InputSpecifier {def value: String}
-case object rawText extends InputSpecifier {val value = "RAW_TEXT"}
-case object record extends InputSpecifier {val value = "RECORD"}
-//workaround to be able specify field name for record
-case class recordField(f: String) extends InputSpecifier {def value = "RECORD."+f}
-
-sealed trait LogicalOperator {def value: String}
-case object empty extends LogicalOperator {val value = ""}
-case object and extends LogicalOperator {val value = "AND"}
-case object or extends LogicalOperator {val value = "OR"}
-case object xor extends LogicalOperator {val value = "XOR"}
-
-sealed trait RelationalOperator {def value: String}
-case object equals extends RelationalOperator{val value = "EQUALS"}
-case object notEquals extends RelationalOperator{val value = "NOT_EQUALS"}
-case object contains extends RelationalOperator {val value = "CONTAINS"}
-case object notContains extends RelationalOperator{val value = "NOT_CONTAINS"}
-
-
+trait RyftQuery

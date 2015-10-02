@@ -28,8 +28,10 @@
  * ============
  */
 
-package com.ryft.spark.connector.domain.query
+package com.ryft.spark.connector.query
 
-case class SimpleRyftQuery(queries: List[String]) {
-  def this(query: String) = this(List(query))
+case class SimpleQuery(queries: List[String]) extends RyftQuery
+
+object SimpleQuery {
+  def apply(query: String) = new SimpleQuery(List(query))
 }

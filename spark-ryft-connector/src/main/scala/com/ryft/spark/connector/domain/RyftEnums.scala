@@ -28,47 +28,24 @@
  * ============
  */
 
-package com.ryft.spark.connector
+package com.ryft.spark.connector.domain
 
-import com.ryft.spark.connector.domain.query._
-import com.ryft.spark.connector._
+sealed trait InputSpecifier {def value: String}
+case object rawText extends InputSpecifier {val value = "RAW_TEXT"}
+case object record extends InputSpecifier {val value = "RECORD"}
+//workaround to be able specify field name for record
+case class recordField(f: String) extends InputSpecifier {def value = "RECORD."+f}
 
-import scala.collection.mutable
+sealed trait LogicalOperator {def value: String}
+case object empty extends LogicalOperator {val value = ""}
+case object and extends LogicalOperator {val value = "AND"}
+case object or extends LogicalOperator {val value = "OR"}
+case object xor extends LogicalOperator {val value = "XOR"}
 
-class RyftQueryBuilder(query: String,
-                       inputSpecifier: InputSpecifier,
-                       logicalOperator: LogicalOperator,
-                       relationalOperator: RelationalOperator) {
+sealed trait RelationalOperator {def value: String}
+case object equals extends RelationalOperator{val value = "EQUALS"}
+case object notEquals extends RelationalOperator{val value = "NOT_EQUALS"}
+case object contains extends RelationalOperator {val value = "CONTAINS"}
+case object notContains extends RelationalOperator{val value = "NOT_CONTAINS"}
 
-  private val recordQueries = mutable.ListBuffer.empty[RyftRecord]
 
-  def this(inputSpecifier: InputSpecifier,
-           relationalOperator: RelationalOperator,
-           query: String) = {
-    this(query, inputSpecifier, empty, relationalOperator)
-    recordQueries += new RyftRecord(query, inputSpecifier, empty, relationalOperator)
-  }
-
-  def and(inputSpecifier: InputSpecifier,
-          relationalOperator: RelationalOperator,
-          query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.and, relationalOperator)
-    this
-  }
-
-  def or(inputSpecifier: InputSpecifier,
-         relationalOperator: RelationalOperator,
-         query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.or, relationalOperator)
-    this
-  }
-
-  def xor(inputSpecifier: InputSpecifier,
-          relationalOperator: RelationalOperator,
-          query: String) = {
-    recordQueries += new RyftRecord(query, inputSpecifier, domain.query.xor, relationalOperator)
-    this
-  }
-
-  def build = new RyftRecordQuery(recordQueries.toList)
-}
