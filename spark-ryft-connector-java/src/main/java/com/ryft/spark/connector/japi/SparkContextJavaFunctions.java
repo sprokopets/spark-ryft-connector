@@ -68,7 +68,7 @@ public class SparkContextJavaFunctions {
     public <T> RyftJavaRDD<T> ryftRDDSimple(SimpleQuery ryftQuery,
                                             RyftQueryOptions queryOptions,
                                             Function1<RyftQuery, Set<String>> choosePartitions,
-                                            Function1<RyftQuery, Set<String>> preferredLocations) {
+                                            Function1<String, Set<String>> preferredLocations) {
         final RyftRDDSimple ryftRDDSimple = (RyftRDDSimple) sparkContextFunctions.ryftRDD(toScalaList(ryftQuery),
                 queryOptions, choosePartitions, preferredLocations);
         return toJavaRDD(ryftRDDSimple, RyftData.class);
@@ -77,7 +77,7 @@ public class SparkContextJavaFunctions {
     public RyftJavaRDD ryftRDDStructured(RecordQuery ryftQuery,
                                          RyftQueryOptions queryOptions,
                                          Function1<RyftQuery, Set<String>> choosePartitions,
-                                         Function1<RyftQuery, Set<String>> preferredLocations) {
+                                         Function1<String, Set<String>> preferredLocations) {
         final RyftRDDSimple ryftRDDSimple = (RyftRDDSimple) sparkContextFunctions.ryftRDD(toScalaList(ryftQuery),
                 queryOptions, choosePartitions, preferredLocations);
         return toJavaRDD(ryftRDDSimple, HashMap.HashTrieMap.class);
@@ -91,7 +91,7 @@ public class SparkContextJavaFunctions {
     public <T> RyftPairJavaRDD<Tuple2<String, T>> ryftPairJavaRDD(SimpleQuery ryftQuery,
                                                                   RyftQueryOptions queryOptions,
                                                                   Function1<RyftQuery, Set<String>> choosePartitions,
-                                                                  Function1<RyftQuery, Set<String>> preferredLocations) {
+                                                                  Function1<String, Set<String>> preferredLocations) {
         final RyftPairRDD ryftPairRDD = (RyftPairRDD) sparkContextFunctions.ryftPairRDD(toScalaList(ryftQuery),
                 queryOptions, choosePartitions, preferredLocations);
         return toJavaRDD(ryftPairRDD, RyftData.class);

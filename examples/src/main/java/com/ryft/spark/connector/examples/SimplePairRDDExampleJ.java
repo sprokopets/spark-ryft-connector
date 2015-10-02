@@ -69,7 +69,7 @@ public class SimplePairRDDExampleJ {
                 query,
                 new RyftQueryOptions("passengers.txt", surrounding, fuzziness),
                 RyftJavaUtil.ryftQueryToEmptySet,
-                RyftJavaUtil.ryftQueryToEmptySet);
+                RyftJavaUtil.stringToEmptySet);
 
         logger.info("count: {}", rdd.count());
     }

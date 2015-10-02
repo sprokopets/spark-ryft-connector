@@ -75,7 +75,7 @@ public class StructuredRDDExampleJ {
                 javaFunctions.ryftRDDStructured(query,
                         new RyftQueryOptions("*.pcrime", surrounding, fuzziness),
                         RyftJavaUtil.ryftQueryToEmptySet,
-                        RyftJavaUtil.ryftQueryToEmptySet);
+                        RyftJavaUtil.stringToEmptySet);
 
         final JavaPairRDD<Option<String>, Integer> counts =
                 ryftRDDStructured.mapToPair(map -> new Tuple2<>(map.get("LocationDescription"), 1))

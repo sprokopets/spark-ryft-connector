@@ -31,7 +31,7 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.{contains, recordField, RyftQueryOptions}
-import com.ryft.spark.connector.query.RecordQuery
+import com.ryft.spark.connector.query.{RyftQuery, RecordQuery}
 import com.ryft.spark.connector.rdd.RyftRDDSimple
 import com.ryft.spark.connector.util.PartitioningHelper
 import org.apache.spark.{SparkContext, SparkConf, Logging}
@@ -47,12 +47,13 @@ object StructuredRDDExample extends App with Logging {
   val query =
     RecordQuery(
       RecordQuery(recordField("desc"), contains, "VEHICLE")
-      .or(recordField("desc"), contains, "BIKE")
-      .or(recordField("desc"), contains, "MOTO"))
+      .or(recordField("desc"), contains, "KE")
+      .or(recordField("desc"), contains, "TO"))
     .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
 
   val ryftOptions = RyftQueryOptions(List("*.pcrime"), 0, 0)
-  val ryftRDD = sc.ryftRDD(List(query),ryftOptions, PartitioningHelper.byFirstLetter)
+  val ryftRDD = sc.ryftRDD(List(query),ryftOptions, PartitioningHelper.byFirstLetter,
+  preferredNode)
 
   val countByDescription = ryftRDD.asInstanceOf[RyftRDDSimple[Map[String, String]]]
     .map(m => {
@@ -62,4 +63,14 @@ object StructuredRDDExample extends App with Logging {
   countByDescription.foreach({case(key, count) =>
     println("key: "+key.get+" count: "+count)
   })
+
+  def preferredNode(preferredPartition: String): Set[String] = {
+    preferredPartition match {
+      case "http://52.20.99.136:9000" => Set("172.16.92.4","172.16.92.5")
+      case "http://52.20.99.136:8765" => Set("172.16.92.6","172.16.92.7")
+      case _ =>
+        logDebug("Unable to find preferred spark node")
+        Set.empty[String]
+    }
+  }
 }

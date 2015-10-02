@@ -58,7 +58,7 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
       queries: List[RyftQuery],
       queryOptions: RyftQueryOptions,
       choosePartitions: RyftQuery => Set[String] = _ => Set.empty[String],
-      preferredLocations: RyftQuery => Set[String] = _ => Set.empty[String]) = {
+      preferredLocations: String => Set[String] = _ => Set.empty[String]) = {
     
     val preparedQueries = prepareQueries(queries, queryOptions, choosePartitions, preferredLocations)
     queries match {
@@ -87,7 +87,7 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
   def ryftPairRDD(queries: List[RyftQuery],
                   queryOptions: RyftQueryOptions,
                   choosePartitions: RyftQuery => Set[String] = _ => Set.empty[String],
-                  preferredLocations: RyftQuery => Set[String] = _ => Set.empty[String]) = {
+                  preferredLocations: String => Set[String] = _ => Set.empty[String]) = {
     val preparedQueries = prepareQueries(queries, queryOptions, choosePartitions, preferredLocations)
     queries match {
       case (sqList: SimpleQuery) :: tail =>
@@ -113,18 +113,17 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
   private def prepareQueries(queries: List[RyftQuery],
                              queryOptions: RyftQueryOptions,
                              choosePartitions: RyftQuery => Set[String],
-                             preferredLocations: RyftQuery => Set[String]) = {
+                             preferredLocations: String => Set[String]) = {
     val restUrls = ryftRestUrls(sc.getConf)
     queries.flatMap(q => {
       val ryftQueryS = RyftQueryHelper.queryAsString(q, queryOptions)
-      val pls = preferredLocations(q)
       val partitions = choosePartitions(q)
 
       val urls =
         if (partitions.nonEmpty) partitions
         else restUrls
 
-      urls.map(url => (ryftQueryS._1, url + ryftQueryS._2, pls))
+      urls.map(url => (ryftQueryS._1, url + ryftQueryS._2, preferredLocations(url)))
     })
   }
 

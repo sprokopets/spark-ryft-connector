@@ -52,4 +52,12 @@ public class RyftJavaUtil {
                     return JavaApiHelper.<String>scalaEmptySet();
                 }
             };
+
+    public static final AbstractFunction1<String, Set<String>> stringToEmptySet =
+            new AbstractFunction1<String, Set<String>>() {
+                @Override
+                public Set<String> apply(String v1) {
+                    return JavaApiHelper.<String>scalaEmptySet();
+                }
+            };
 }
