@@ -17,8 +17,8 @@ You can find jar:
 # Ryft Query mechanism
 
 There are two main types of RyftQuery:
-1. SimpleQuery
-2. RecordQuery
+ 1. SimpleQuery
+ 2. RecordQuery
 
 SimpleQuery represents RAW_TEXT search for one or more search queries. For this type of query used only CONTAINS relational operator. For two or more search queries used OR logical operator.
 For example:
