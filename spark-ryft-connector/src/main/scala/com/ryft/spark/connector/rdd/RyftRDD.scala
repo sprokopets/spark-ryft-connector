@@ -49,7 +49,7 @@ import scala.reflect.ClassTag
  * This class is the main entry point for analyzing data using Ryft with Spark.
  */
 abstract class RyftRDD [T: ClassTag, R](@transient sc: SparkContext,
-                               queries: Iterable[(String,String,Set[String])])
+                               queries: Iterable[RDDQuery])
   extends RDD[T](sc, Nil) {
 
   @DeveloperApi
@@ -100,9 +100,9 @@ case class RyftRDDPartition(idx: Int,
  * Simple `RyftRDD` partitioner to prepare partitions
  */
 class RyftRDDPartitioner {
-  def partitions(queries: Iterable[(String,String, Set[String])]): Array[Partition] = {
+  def partitions(queries: Iterable[RDDQuery]): Array[Partition] = {
     (for((query,i) <- queries.zipWithIndex) yield {
-      new RyftRDDPartition(i, query._1, query._2, query._3)
+      new RyftRDDPartition(i, query.key, query.query, query.preferredLocation)
     }).toArray[Partition]
   }
 }

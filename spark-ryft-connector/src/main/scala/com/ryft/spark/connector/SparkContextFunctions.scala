@@ -33,7 +33,7 @@ package com.ryft.spark.connector
 import com.ryft.spark.connector.config.ConfigHolder
 import com.ryft.spark.connector.query.{GenericQuery, RyftQuery, RecordQuery, SimpleQuery}
 import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.rdd.{RyftRDDSimple, RyftPairRDD}
+import com.ryft.spark.connector.rdd.{RDDQuery, RyftRDDSimple, RyftPairRDD}
 import com.ryft.spark.connector.util.{TransformFunctions, RyftQueryHelper}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -108,7 +108,7 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
    * @param queryOptions Query specific options
    * @param choosePartitions Function provides partitions for `RyftQuery`
    * @param preferredLocations Function provided spark preferred nodes for `RyftQuery`
-   * @return Sequence of queries Iterable[(Key,RyftUrl,Set[PreferredLocations])]
+   * @return Sequence of RDD queries Iterable[RDDQuery]
    */
   private def prepareQueries(queries: List[RyftQuery],
                              queryOptions: RyftQueryOptions,
@@ -123,7 +123,7 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
         if (partitions.nonEmpty) partitions
         else restUrls
 
-      urls.map(url => (ryftQueryS._1, url + ryftQueryS._2, preferredLocations(url)))
+      urls.map(url => RDDQuery(ryftQueryS._1, url + ryftQueryS._2, preferredLocations(url)))
     })
   }
 

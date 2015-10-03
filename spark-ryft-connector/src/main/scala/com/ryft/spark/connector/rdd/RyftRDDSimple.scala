@@ -36,7 +36,7 @@ import org.apache.spark.annotation.DeveloperApi
 import scala.reflect.ClassTag
 
 class RyftRDDSimple[T: ClassTag](@transient sc: SparkContext,
-                                    queries: Iterable[(String,String,Set[String])],
+                                    queries: Iterable[RDDQuery],
                                     transform: Map[String, Any] => T)
   extends RyftRDD[T, T](sc, queries) {
 
