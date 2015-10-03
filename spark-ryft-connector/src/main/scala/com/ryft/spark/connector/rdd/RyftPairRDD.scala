@@ -36,7 +36,7 @@ import org.apache.spark.{TaskContext, Partition, SparkContext}
 import scala.reflect.ClassTag
 
 class RyftPairRDD[T: ClassTag](@transient sc: SparkContext,
-                                        queries: Iterable[(String,String,Set[String])],
+                                        queries: Iterable[RDDQuery],
                                         transform: Map[String, Any] => T)
   extends RyftRDD[(String,T), T](sc, queries) {
 
