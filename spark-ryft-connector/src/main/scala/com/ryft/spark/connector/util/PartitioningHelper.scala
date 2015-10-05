@@ -51,8 +51,28 @@ object PartitioningHelper extends Logging {
    */
   def byFirstLetter(recordQuery: RyftQuery) = {
     recordQuery match {
-      case sq: SimpleQuery => sq.queries.flatMap(q => choosePartitionsQuery(q)).toSet
-      case rq: RecordQuery => choosePartitions(rq.queries, mutable.Set.empty[String])
+      case sq: SimpleQuery => sq.queries.flatMap(q => partitionsByFirstLetter(q)).toSet
+      case rq: RecordQuery => choosePartitions(rq.queries, mutable.Set.empty[String],
+        partitionsByFirstLetter)
+      case _ =>
+        val msg = "Unable to find partitions for RyftQuery. " +
+          "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
+        logWarning(msg)
+        throw new RyftSparkException(msg)
+    }
+  }
+
+  /**
+   * Chooses partitions using function passed for partitioning
+   *
+   * @param ryftQuery Ryft query
+   * @param partitions Function to choose partition
+   * @return Set of partitions required for given query
+   */
+  def choosePartitions(ryftQuery: RyftQuery, partitions: String => Set[String]): Set[String] = {
+    ryftQuery match {
+      case sq: SimpleQuery => sq.queries.flatMap(q => partitions(q)).toSet
+      case rq: RecordQuery => choosePartitions(rq.queries, mutable.Set.empty[String], partitions)
       case _ =>
         val msg = "Unable to find partitions for RyftQuery. " +
           "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
@@ -62,17 +82,22 @@ object PartitioningHelper extends Logging {
   }
 
   @tailrec
-  private def choosePartitions(queries: List[GenericQuery], acc: mutable.Set[String]): Set[String] = {
+  private def choosePartitions(
+    queries: List[GenericQuery],
+    acc: mutable.Set[String],
+    partitions: String => Set[String]):
+  Set[String] = {
+
     if (queries.isEmpty) acc.toSet
     else {
       queries.head match {
         case sq: SingleQuery =>
-          acc ++= choosePartitionsQuery(sq.query)
-          choosePartitions(queries.tail, acc)
+          acc ++= partitions(sq.query)
+          choosePartitions(queries.tail, acc, partitions)
 
         case rq: RecordQuery =>
-          acc ++= recordQueryPartitions(rq)
-          choosePartitions(queries.tail, acc)
+          acc ++= recordQueryPartitions(rq, partitions)
+          choosePartitions(queries.tail, acc, partitions)
 
         case _ =>
           val msg = "Unable to choose partitions. " +
@@ -83,11 +108,14 @@ object PartitioningHelper extends Logging {
     }
   }
 
-  private def recordQueryPartitions(rq: RecordQuery): Set[String] = {
-    choosePartitions(rq.queries, mutable.Set.empty[String]).toSet
+  private def recordQueryPartitions(
+    rq: RecordQuery,
+    partitions: String => Set[String]):
+  Set[String] = {
+    choosePartitions(rq.queries, mutable.Set.empty[String], partitions)
   }
 
-  private def choosePartitionsQuery(query: String): Set[String] = {
+  private def partitionsByFirstLetter(query: String): Set[String] = {
     ConfigHolder.partitions.filter({
       case(url, pattern) => pattern.isEmpty || {
         val Pattern = pattern.r.unanchored
