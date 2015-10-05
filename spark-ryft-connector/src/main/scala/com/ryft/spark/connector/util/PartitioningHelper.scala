@@ -45,12 +45,33 @@ import scala.collection.mutable
 object PartitioningHelper extends Logging {
 
   /**
-   * Chooses partitions according to first letter of the query
-   * @param recordQuery Search query
+   * Chooses partitions for Single query
+   *
+   * @param ryftQuery Search query
    * @return Set of partitions for query
    */
-  def byFirstLetter(recordQuery: RyftQuery) = {
-    recordQuery match {
+  def forSingleQuery(
+    ryftQuery: RyftQuery,
+    partitions: SingleQuery => Set[String]):
+  Set[String] = {
+    ryftQuery match {
+      case sq: SingleQuery => partitions(sq)
+      case rq: RecordQuery => forSingleQuery(rq.queries, partitions, mutable.Set.empty[String])
+      case _ =>
+        val msg = "Unable to find partitions for RyftQuery. " +
+          "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
+        logWarning(msg)
+        throw new RyftSparkException(msg)
+    }
+  }
+
+  /**
+   * Chooses partitions according to first letter of the query
+   * @param ryftQuery Search query
+   * @return Set of partitions for query
+   */
+  def byFirstLetter(ryftQuery: RyftQuery) = {
+    ryftQuery match {
       case sq: SimpleQuery => sq.queries.flatMap(q => partitionsByFirstLetter(q)).toSet
       case rq: RecordQuery => choosePartitions(rq.queries, mutable.Set.empty[String],
         partitionsByFirstLetter)
@@ -79,6 +100,39 @@ object PartitioningHelper extends Logging {
         logWarning(msg)
         throw new RyftSparkException(msg)
     }
+  }
+
+  @tailrec
+  private def forSingleQuery(
+    queries: List[GenericQuery],
+    partitions: SingleQuery => Set[String],
+    acc: mutable.Set[String]):
+  Set[String] = {
+    if (queries.isEmpty) acc.toSet
+    else {
+      queries.head match {
+        case sq: SingleQuery =>
+          acc ++= partitions(sq)
+          forSingleQuery(queries.tail, partitions, acc)
+
+        case rq: RecordQuery =>
+          acc ++= recordQueryForSingleQuery(rq, partitions)
+          forSingleQuery(queries.tail, partitions, acc)
+
+        case _ =>
+          val msg = "Unable to choose partitions. " +
+            "Unexpected Ryft Query Type: " + typeOf[GenericQuery]
+          logWarning(msg)
+          throw new RyftSparkException("Unexpected Ryft Query Type")
+      }
+    }
+  }
+
+  private def recordQueryForSingleQuery(
+     rq: RecordQuery,
+     partitions: SingleQuery => Set[String]):
+  Set[String] = {
+    forSingleQuery(rq.queries, partitions, mutable.Set.empty[String])
   }
 
   @tailrec
