@@ -33,14 +33,14 @@ package com.ryft.spark.connector.query
 import com.ryft.spark.connector.domain
 import com.ryft.spark.connector.domain._
 
-private[connector] sealed trait GenericQuery extends RyftQuery
+sealed trait GenericQuery extends RyftQuery
 
-private[connector] case class SingleQuery(lo: LogicalOperator,
+case class SingleQuery(lo: LogicalOperator,
                        is: InputSpecifier,
                        ro: RelationalOperator,
                        query: String) extends GenericQuery
 
-private[connector] case class NestedQuery(lo: LogicalOperator,
+case class NestedQuery(lo: LogicalOperator,
                                       queries: List[GenericQuery])
   extends GenericQuery
 
