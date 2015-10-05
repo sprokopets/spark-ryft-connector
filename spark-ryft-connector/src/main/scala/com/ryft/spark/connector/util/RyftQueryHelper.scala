@@ -45,14 +45,16 @@ private [connector] object RyftQueryHelper extends Logging{
     val ryftQueryS =
       ryftQuery match {
         case sq: SimpleQuery =>
-          val queryString = s"(${queryToString(sq)})"
-          (queryString, queryToString(sq) + queryOptionsToString(queryOptions))
+          val queryS = s"(${queryToString(sq)})"
+          val queryEncoded = UrlEncoder.encode(queryS) + queryOptionsToString(queryOptions)
+          (queryS, queryEncoded)
 
         case rq: RecordQuery =>
           val queryString = s"(${queryToString(rq)})"
           val files = new StringBuilder
-          queryOptions.files.foreach(f => files.append(s"&files=$f"))
-          (queryString, queryToString(rq) + files + "&format=xml")
+          queryOptions.files.foreach(f => files.append(s"&files=${UrlEncoder.encode(f)}"))
+          val queryEncoded = UrlEncoder.encode(queryToString(rq)) + files + "&format=xml"
+          (queryString, queryEncoded)
 
         case _ =>
           val msg = "Unable to convert RyftQuery to string. " +
@@ -66,19 +68,16 @@ private [connector] object RyftQueryHelper extends Logging{
 
   private def queryToString(query: SimpleQuery): String = {
     val queries = query.queries
-    val preparedQueries = new StringBuilder(s"(${rawText.value}%20${contains.value}%20%22${queries.head}%22)")
+    val preparedQueries = new StringBuilder(s"""(${rawText.value} ${contains.value} \"${queries.head}\")""")
     if (queries.tail.nonEmpty) {
-      queries.tail.foreach(q => preparedQueries.append(s"OR(${rawText.value}%20${contains.value}%20%22$q%22)"))
+      queries.tail.foreach(q => preparedQueries.append(s"""OR(${rawText.value} ${contains.value} \"$q\")"""))
     }
+
     preparedQueries.toString()
   }
 
   private def queryToString(query: RecordQuery): String = {
     queryToString(query.queries, "")
-  }
-
-  private def queryToString(query: SingleQuery) = {
-    s"(${query.is.value}%20${query.ro.value}%20%22${query.query}%22)"
   }
 
   @tailrec
@@ -93,14 +92,18 @@ private [connector] object RyftQueryHelper extends Logging{
         case rq: RecordQuery => queryToString(queries.tail,
           rq.lo.value + "(" + queryToString(rq) + ")" + acc)
 
-        case _               => throw new RyftSparkException("Unexpected Ryft Query Type")
+        case _ => throw new RyftSparkException("Unexpected Ryft Query Type")
       }
     }
   }
 
+  private def queryToString(query: SingleQuery) = {
+    s"""(${query.is.value} ${query.ro.value} \"${query.query}\")"""
+  }
+
   private def queryOptionsToString(queryOptions: RyftQueryOptions): String = {
     val files = new StringBuilder
-    queryOptions.files.foreach(f => files.append(s"&files=$f"))
+    queryOptions.files.foreach(f => files.append(s"&files=${UrlEncoder.encode(f)}"))
     s"$files" +
       s"&surrounding=${queryOptions.surrounding}" +
       s"&fuzziness=${queryOptions.fuzziness}"
