@@ -47,7 +47,7 @@ object StreamExample extends App {
   val sc = new SparkContext(sparkConf)
   val r = scala.util.Random
 
-  val metaInfo = RyftQueryOptions(List("reddit/*"), 10, 0)
+  val metaInfo = RyftQueryOptions("reddit/*", 10, 0 toByte)
   while(true) {
     val words = (0 until 5).map(_ => {
       lines(r.nextInt(lines.size))

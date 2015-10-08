@@ -67,7 +67,7 @@ public class SimplePairRDDExampleJ {
 
         final RyftPairJavaRDD rdd = javaFunctions.ryftPairJavaRDD(
                 query,
-                new RyftQueryOptions("passengers.txt", surrounding, fuzziness),
+                RyftQueryOptions.apply("passengers.txt", surrounding, fuzziness),
                 RyftJavaUtil.ryftQueryToEmptySet,
                 RyftJavaUtil.stringToEmptySet);
 

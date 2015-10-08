@@ -73,7 +73,7 @@ public class StructuredRDDExampleJ {
 
         final RyftJavaRDD<HashMap.HashTrieMap<String,String>> ryftRDDStructured =
                 javaFunctions.ryftRDDStructured(query,
-                        new RyftQueryOptions("*.pcrime", surrounding, fuzziness),
+                        RyftQueryOptions.apply("*.pcrime", surrounding, fuzziness),
                         RyftJavaUtil.ryftQueryToEmptySet,
                         RyftJavaUtil.stringToEmptySet);
 

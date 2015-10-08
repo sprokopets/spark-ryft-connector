@@ -31,7 +31,7 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.{contains, recordField, RyftQueryOptions}
-import com.ryft.spark.connector.query.{RyftQuery, RecordQuery}
+import com.ryft.spark.connector.query.RecordQuery
 import com.ryft.spark.connector.rdd.RyftRDDSimple
 import com.ryft.spark.connector.util.PartitioningHelper
 import org.apache.spark.{SparkContext, SparkConf, Logging}
@@ -51,7 +51,7 @@ object StructuredRDDExample extends App with Logging {
       .or(recordField("desc"), contains, "TO"))
     .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
 
-  val ryftOptions = RyftQueryOptions(List("*.pcrime"), 0, 0)
+  val ryftOptions = RyftQueryOptions("*.pcrime")
   val ryftRDD = sc.ryftRDD(List(query),ryftOptions, PartitioningHelper.byFirstLetter,
   preferredNode)
 

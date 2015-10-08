@@ -46,7 +46,7 @@ object TwitterExample extends App with Logging {
   val timeWindow = 30
   val filter = "football"
   val popularAmount = 4
-  val metaInfo = RyftQueryOptions(List("reddit/*"), 10, 0)
+  val queryOptions = RyftQueryOptions("reddit/*", 10, 0 toByte)
 
   System.setProperty("twitter4j.oauth.consumerKey", "")
   System.setProperty("twitter4j.oauth.consumerSecret", "")
@@ -78,7 +78,7 @@ object TwitterExample extends App with Logging {
       topList.foreach { case (count, tag) => logInfo("%s (%s tweets)".format(tag, count)) }
       val tags = topList.map(e => e._2.substring(1, e._2.length)).toList
       val queries = tags.map(t => SimpleQuery(List(t)))
-      val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
+      val ryftRDD = sc.ryftPairRDD(queries, queryOptions)
 
       val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
       logInfo("\n"+count.mkString("\n"))
