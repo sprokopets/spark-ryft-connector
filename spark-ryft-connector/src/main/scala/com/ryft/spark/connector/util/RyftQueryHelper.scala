@@ -47,7 +47,7 @@ private [connector] object RyftQueryHelper extends Logging{
         case sq: SimpleQuery =>
           val queryS = s"(${queryToString(sq)})"
           val queryEncoded = UrlEncoder.encode(queryS) + queryOptionsToString(queryOptions)
-          (queryS, queryEncoded)
+          (sq.queries.mkString(","), queryEncoded)
 
         case rq: RecordQuery =>
           val queryString = s"(${queryToString(rq)})"

@@ -37,9 +37,12 @@ import com.ryft.spark.connector.util.PartitioningHelper
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 import com.ryft.spark.connector._
 
+import scala.language.postfixOps
+
 object SimplePairRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
+    .setMaster("local[2]")
     .set("spark.locality.wait", "120s")
     .set("spark.locality.wait.node", "120s")
     .set("spark.ryft.rest.url", "http://52.20.99.136:9000")
@@ -47,10 +50,10 @@ object SimplePairRDDExample extends App with Logging {
 
   val sc = new SparkContext(sparkConf)
 
-  val query = SimpleQuery(List("october","april"))
+  val queries = List(SimpleQuery("october"),SimpleQuery("april"))
 
   val metaInfo = RyftQueryOptions("reddit/*", 10, 0 toByte)
-  val ryftRDD = sc.ryftPairRDD(List(query),metaInfo,PartitioningHelper.byFirstLetter)
+  val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
 
   val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
   logInfo("count: \n"+count.mkString("\n"))

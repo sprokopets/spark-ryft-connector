@@ -34,6 +34,7 @@ import com.ryft.spark.connector._
 import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
 import com.ryft.spark.connector.query.SimpleQuery
 import com.ryft.spark.connector.rdd.RyftPairRDD
+import org.apache.spark.rdd.PairRDDFunctions
 
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.twitter.TwitterUtils
@@ -41,48 +42,47 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 import org.json4s.DefaultFormats
 
+import scala.language.postfixOps
+import com.ryft.spark.connector._
+
 object TwitterExample extends App with Logging {
   implicit val formats = DefaultFormats
-  val timeWindow = 30
-  val filter = "football"
+  val timeWindow = 60
+  val filter = "#Election2016"
   val popularAmount = 4
   val queryOptions = RyftQueryOptions("reddit/*", 10, 0 toByte)
 
-  System.setProperty("twitter4j.oauth.consumerKey", "")
-  System.setProperty("twitter4j.oauth.consumerSecret", "")
-  System.setProperty("twitter4j.oauth.accessToken", "")
-  System.setProperty("twitter4j.oauth.accessTokenSecret", "")
+  System.setProperty("twitter4j.oauth.consumerKey", "YZvJEtKXN7QuwpjFNw")
+  System.setProperty("twitter4j.oauth.consumerSecret", "MkgdujvCbXyiF5JNW66XV5S0SOvpxd6UPekp9c3RN7Y")
+  System.setProperty("twitter4j.oauth.accessToken", "1449688434-T4qw1c5TvAwc2rtNExI3caBUTX8L93ab2cuGZvh")
+  System.setProperty("twitter4j.oauth.accessTokenSecret", "TOLfaalYuQfNCNKVWOjJpoJcDEesdTPgEi9WWKrohCk")
+
+  val candidates = Seq(
+    "Trump", "Carson", "Rubio", "Cruz", "Fiorina", "Huckabee",
+    "Paul", "Christie", "Kasich", "Santorum", "Graham", "Jindal",
+    "Pataki", "Bush", "Clinton", "Sanders", "Biden", "Chafee",
+    "Webbv", "O’Malley", "Lessig")
 
   val sparkConf = new SparkConf()
     .setAppName("TwitterSportTag")
+    .setMaster("local[2]")
     .set("spark.locality.wait", "120s")
     .set("spark.locality.wait.node", "120s")
 
   val sc = new SparkContext(sparkConf)
   val ssc = new StreamingContext(sc, Seconds(timeWindow))
 
-  val stream = TwitterUtils.createStream(ssc, None, List("#"+filter), StorageLevel.MEMORY_AND_DISK_SER_2)
-  val hashTags = stream.flatMap(status => status.getText.split(" ")
-    .filter(_.startsWith("#")))
+  val stream = TwitterUtils.createStream(ssc, None, List(filter), StorageLevel.MEMORY_AND_DISK_SER_2)
+  val mentionedCandidates = stream.flatMap(status => status.getText.split(" "))
+    .filter(candidates.contains)
 
-  val topCountsN = hashTags.map((_, 1))
-    .reduceByKeyAndWindow(_ + _, Seconds(timeWindow))
-    .map{case (topic, count) => (count, topic)}
-    .transform(_.sortByKey(false))
+  mentionedCandidates.foreachRDD(rdd => {
+    val rddCount = rdd.map(word => (word, 1))
+      .reduceByKey((a, b) => a + b)
 
-  topCountsN.foreachRDD(rdd => {
-    if (rdd.count() > 0) {
-      val topList = rdd.take(popularAmount)
-      logInfo("\nPopular %s topics in last %s seconds (%s total):"
-        .format(popularAmount, timeWindow, rdd.count()))
-      topList.foreach { case (count, tag) => logInfo("%s (%s tweets)".format(tag, count)) }
-      val tags = topList.map(e => e._2.substring(1, e._2.length)).toList
-      val queries = tags.map(t => SimpleQuery(List(t)))
-      val ryftRDD = sc.ryftPairRDD(queries, queryOptions)
-
-      val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
-      logInfo("\n"+count.mkString("\n"))
-    }
+    val candidates = rdd.collect().toList
+    val simpleQueries = candidates.map(SimpleQuery(_))
+    val ryftRDD = sc.ryftPairRDD(simpleQueries,queryOptions)
   })
 
   ssc.start()
