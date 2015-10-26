@@ -38,8 +38,8 @@ object TransformFunctions {
     val objS = obj.asInstanceOf[Map[String, String]]
     val index = obj.get("_index").get.asInstanceOf[Map[String,String]]
     RyftData(index("file"),
-      index("offset").toInt,
-      index("length").toInt,
+      index("offset").toLong,
+      index("length").toLong,
       index("fuzziness").toByte,
       new String(objS("data")))
   }
