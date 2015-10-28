@@ -28,43 +28,28 @@
  * ============
  */
 
-package com.ryft.spark.connector.rdd
+package com.ryft.spark.connector.sql
 
-import com.ryft.spark.connector.util.SimpleJsonParser
-import org.apache.spark.{Partition, Logging}
-import org.msgpack.jackson.dataformat.MessagePackFactory
+import com.ryft.spark.connector.RyftSparkException
+import org.apache.spark.Logging
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.sources.{SchemaRelationProvider, BaseRelation, RelationProvider}
+import org.apache.spark.sql.types.StructType
 
-/**
- * An iterator that allows to iterate through the stream of JSON objects.
- * Used MessagePackFactory parser by default.
- *
- * `hasNext` reads next element from the stream to accumulator
- * and returns true if element exists
- *
- */
-abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] => T)
-  extends Iterator[R] with Logging {
+class DefaultSource extends SchemaRelationProvider with Logging {
+  override def createRelation(@transient sqlContext: SQLContext,
+      parameters: Map[String, String],
+      schema: StructType): BaseRelation = {
+    val files = parameters.getOrElse("files", {
+      val msg = "Required parameter files was not specified"
+      logWarning(msg)
+      throw new RyftSparkException(msg)
+    }).split(",").toList
 
-  private val partition = split.asInstanceOf[RyftRDDPartition]
-  logDebug(s"Compute partition, idx: ${partition.idx}")
-
-  private val is = RyftRestConnection(partition.query).getInputStream
-  private val parser = new MessagePackFactory().createParser(is)
-
-  protected var accumulator = Map.empty[String,String]
-
-  override def hasNext: Boolean = {
-    val json = SimpleJsonParser.parseJson(parser)
-    json match {
-      case acc: Map[String, String] =>
-        accumulator = json.asInstanceOf[Map[String,String]]
-        true
-      case _ =>
-        logDebug(s"Iterator processing ended for partition with idx: ${partition.idx}")
-        is.close()
-        false
-    }
+    logInfo(s"Creating Ryft Relation: " +
+      s"\nfiles: ${files.mkString(",")}" +
+      s"\nschema: ${schema.treeString}")
+    new RyftRelation(files, schema)(sqlContext)
   }
-
-  override def next(): R
 }
+

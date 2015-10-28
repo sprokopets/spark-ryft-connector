@@ -30,70 +30,51 @@
 
 package com.ryft.spark.connector.query
 
+
 import com.ryft.spark.connector.domain
-import com.ryft.spark.connector.domain._
+import com.ryft.spark.connector.domain.{InputSpecifier, RelationalOperator}
+import com.ryft.spark.connector.query.filter._
+import com.ryft.spark.connector.RyftSparkException
+import com.ryft.spark.connector.query.RecordQuery._
 
-sealed trait GenericQuery extends RyftQuery
+import scala.annotation.tailrec
 
-case class SingleQuery(lo: LogicalOperator,
-                       is: InputSpecifier,
-                       ro: RelationalOperator,
-                       query: String) extends GenericQuery
-
-case class NestedQuery(lo: LogicalOperator,
-                                      queries: List[GenericQuery])
-  extends GenericQuery
-
-case class RecordQuery(lo: LogicalOperator,
-                 queries: List[GenericQuery]) extends GenericQuery {
-  def this(is: InputSpecifier,
-           ro: RelationalOperator,
-           query: String) = {
-    this(empty, SingleQuery(empty, is, ro, query) :: Nil)
+case class RecordQuery(filters: List[Filter]) extends RyftQuery{
+  def and(is: InputSpecifier, ro: RelationalOperator, value: String) = {
+    RecordQuery(toFilter(is, ro, value) :: filters)
   }
 
-  def this(query: RecordQuery) = {
-    this(empty, query :: Nil)
+  def and(rq: RecordQuery) = {
+    RecordQuery(andToTree(rq.filters.tail, rq.filters.head) :: filters)
   }
 
-  def and(is: InputSpecifier,
-          ro: RelationalOperator,
-          query: String) = {
-    RecordQuery(empty, SingleQuery(domain.and, is, ro, query) :: queries)
+  def or(is: InputSpecifier, ro: RelationalOperator, value: String) = {
+    val filter = toFilter(is, ro, value)
+    RecordQuery(Or(filter, filters.head) :: filters.tail)
   }
-
-  def and(query: RecordQuery) = {
-    RecordQuery(empty, RecordQuery(domain.and, query) :: queries)
-  }
-
-  def or(is: InputSpecifier,
-         ro: RelationalOperator,
-         query: String) = {
-    new RecordQuery(empty, SingleQuery(domain.or, is, ro, query) :: queries)
-  }
-
-  def or(query: RecordQuery) = {
-    RecordQuery(empty, RecordQuery(domain.or, query) :: queries)
-  }
-
-  def xor(is: InputSpecifier,
-         ro: RelationalOperator,
-         query: String) = {
-    new RecordQuery(empty, SingleQuery(domain.xor, is, ro, query) :: queries)
-  }
-
-  def xor(query: RecordQuery) = {
-    RecordQuery(empty, RecordQuery(domain.xor, query) :: queries)
-  }
-
-  def build = queries
 }
 
 object RecordQuery {
-  def apply(is: InputSpecifier,
-            ro: RelationalOperator,
-            query: String) = new RecordQuery(is, ro, query)
+  def apply() = new RecordQuery(Nil)
+  def apply(filter: Filter) = new RecordQuery(filter :: Nil)
+  def apply(is: InputSpecifier, ro: RelationalOperator, value: String) = {
+    new RecordQuery(toFilter(is, ro, value) :: Nil)
+  }
+  def apply(rq: RecordQuery) = {
+    new RecordQuery(andToTree(rq.filters.tail, rq.filters.head) :: Nil)
+  }
 
-  def apply(query: RecordQuery) = new RecordQuery(new RecordQuery(empty, query.queries))
-  def apply(lo: LogicalOperator, query: RecordQuery) = new RecordQuery(lo, query.queries)
+  private def toFilter(is: InputSpecifier, ro: RelationalOperator, value: String) = ro match {
+    case domain.contains => Contains(is.value, value)
+    case domain.notContains => NotContains(is.value, value)
+    case domain.equalTo => EqualTo(is.value, value)
+    case domain.notEqualTo => NotEqualTo(is.value, value)
+    case _ => throw new RyftSparkException(s"Unknown Relational Operator: $ro")
+  }
+
+  @tailrec
+  private def andToTree(filters: List[Filter], acc: Filter): Filter = {
+    if (filters.isEmpty) acc
+    else andToTree(filters.tail, And(filters.head, acc))
+  }
 }

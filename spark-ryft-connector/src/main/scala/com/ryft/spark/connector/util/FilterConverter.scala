@@ -28,47 +28,47 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector.util
 
-import com.ryft.spark.connector.domain.{contains, recordField, RyftQueryOptions}
+import com.ryft.spark.connector.query._
 import com.ryft.spark.connector.query.RecordQuery
-import com.ryft.spark.connector.rdd.RyftRDD
-import com.ryft.spark.connector.util.RyftPartitioner
-import org.apache.spark.{SparkContext, SparkConf, Logging}
+import org.apache.spark.sql.sources._
 
-import com.ryft.spark.connector._
+import scala.annotation.tailrec
 
-object StructuredRDDExample extends App with Logging {
-  val sparkConf = new SparkConf()
-    .setAppName("SimplePairRDDExample")
-    .setMaster("local[2]")
+object FilterConverter {
+  @tailrec
+  def filtersToRecordQuery(filters: Array[Filter],
+      acc: RecordQuery = RecordQuery()): RecordQuery = {
+    if (filters.isEmpty) acc
+    else filtersToRecordQuery(filters.tail, acc.and(filterToRecordQuery(filters.head)))
+  }
 
-  val sc = new SparkContext(sparkConf)
+  private def filterToRecordQuery(filter: Filter): RecordQuery = RecordQuery(toRyftFilter(filter))
 
-  val query =
-    RecordQuery(recordField("desc"), contains, "VEHICLE")
-      .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
+  //TODO: try to implement it tailrec
+  //This method is not tail recursive but  large depth isn't assumed here
+  private def toRyftFilter(f: Filter): filter.Filter = f match {
+    case Not(filter) => not(filter)
+    case EqualTo(attr, v) => filter.EqualTo("RECORD."+attr,v.toString) //TODO: check if we should not use String everywhere
+    case StringContains(attr, v) => filter.Contains("RECORD."+attr, v)
+    case StringStartsWith(attr, v) => filter.Contains("RECORD."+attr, v)
+    case StringEndsWith(attr, v) => filter.Contains("RECORD."+attr, v)
 
-  val ryftOptions = RyftQueryOptions("*.pcrime")
-  val ryftRDD = sc.ryftRDD(query,ryftOptions, RyftPartitioner.byFirstLetter,
-    preferredNode)
+    case Or(left, right) => filter.Or(toRyftFilter(left), toRyftFilter(right))
+    case And(left, right) => filter.And(toRyftFilter(left), toRyftFilter(right))
+    case _ =>
+      println("error: "+ f)
+      throw new RuntimeException //TODO: exception + message
+  }
 
-  val countByDescription = ryftRDD.asInstanceOf[RyftRDD[Map[String, String]]]
-    .map(m => {
-    (m.get("LocationDescription"), 1)
-  }).reduceByKey(_ + _)
-
-  countByDescription.foreach({case(key, count) =>
-    println("key: "+key.get+" count: "+count)
-  })
-
-  def preferredNode(preferredPartition: String): Set[String] = {
-    preferredPartition match {
-      case "http://52.20.99.136:9000" => Set("172.16.92.4","172.16.92.5")
-      case "http://52.20.99.136:8765" => Set("172.16.92.6","172.16.92.7")
-      case _ =>
-        logDebug("Unable to find preferred spark node")
-        Set.empty[String]
-    }
+  private def not(f: Filter): filter.Filter = f match {
+    case EqualTo(attr, v) => filter.NotEqualTo("RECORD."+attr,v.toString) //TODO: check if we should not use String everywhere
+    case StringContains(attr, v) => filter.NotContains("RECORD."+attr, v)
+    case StringStartsWith(attr, v) => filter.NotContains("RECORD."+attr, v)
+    case StringEndsWith(attr, v) => filter.NotContains("RECORD."+attr, v)
+    case _ =>
+      println("error: "+ f)
+      throw new RuntimeException //TODO: exception + message
   }
 }

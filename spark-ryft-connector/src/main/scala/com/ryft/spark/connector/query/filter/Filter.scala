@@ -28,37 +28,27 @@
  * ============
  */
 
-package com.ryft.spark.connector.rdd
+package com.ryft.spark.connector.query.filter
 
-import org.apache.spark.{TaskContext, Partition, SparkContext}
-import org.apache.spark.annotation.DeveloperApi
+abstract class Filter
 
-import scala.reflect.ClassTag
+/**
+ * A filter that evaluates to `true` iff the attribute evaluates to a value
+ * equal to `value`.
+ */
+case class EqualTo(attribute: String, value: String) extends Filter
+case class NotEqualTo(attribute: String, value: String) extends Filter
+case class Contains(attribute: String, value: String) extends Filter
+case class NotContains(attribute: String, value: String) extends Filter
 
-class RyftRDDSimple[T: ClassTag](@transient sc: SparkContext,
-                                    queries: Iterable[RDDQuery],
-                                    transform: Map[String, Any] => T)
-  extends RyftRDD[T, T](sc, queries) {
+/**
+ * A filter that evaluates to `true` iff both `left` or `right` evaluate to `true`.
+ */
+case class And(left: Filter, right: Filter) extends Filter
 
-  @DeveloperApi
-  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
-    val partition = split.asInstanceOf[RyftRDDPartition]
-    val idx = partition.idx
+/**
+ * A filter that evaluates to `true` iff at least one of `left` or `right` evaluates to `true`.
+ */
+case class Or(left: Filter, right: Filter) extends Filter
 
-    new RyftIterator[T,T](partition, transform) {
-      logDebug(s"Start processing iterator for partition with idx: $idx")
-
-      override def next(): T = {
-        if (accumulator.isEmpty) {
-          logWarning("Next element does not exist")
-          throw new RuntimeException("Next element does not exist")
-        }
-
-        val elem = transform(accumulator)
-        accumulator = Map.empty[String, String]
-        elem
-      }
-    }
-  }
-}
-
+case class Xor(left: Filter, right: Filter) extends Filter

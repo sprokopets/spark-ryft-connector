@@ -28,39 +28,19 @@
  * ============
  */
 
-package com.ryft.spark.connector.rdd
+package com.ryft.spark.connector.util
 
-import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.query.RyftQuery
-import org.apache.spark.{TaskContext, Partition, SparkContext}
-import org.apache.spark.annotation.DeveloperApi
+import com.ryft.spark.connector.config.ConfigHolder
+import org.apache.spark.SparkConf
 
-import scala.reflect.ClassTag
-
-class RyftRDD[T: ClassTag](@transient sc: SparkContext,
-     override val ryftQuery: RyftQuery,
-     override val queryOptions: RyftQueryOptions,
-     val transform: Map[String, Any] => T)
-  extends RyftAbstractRDD[T, T](sc, ryftQuery, queryOptions) {
-
-  @DeveloperApi
-  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
-    val partition = split.asInstanceOf[RyftRDDPartition]
-    val idx = partition.idx
-
-    new NextIterator[T,T](partition, transform) {
-      logDebug(s"Start processing iterator for partition with idx: $idx")
-
-      override def next(): T = {
-        if (accumulator.isEmpty) {
-          logWarning("Next element does not exist")
-          throw new RuntimeException("Next element does not exist")
-        }
-
-        val elem = transform(accumulator)
-        accumulator = Map.empty[String, String]
-        elem
-      }
-    }
+//TODO: Some common place, need to rethink util package
+object RyftUtil {
+  def ryftRestUrls(sparkConf: SparkConf): Set[String] = {
+    val urlOption = sparkConf.getOption("spark.ryft.rest.url")
+    if (urlOption.nonEmpty) urlOption.get
+      .split(",")
+      .map(url => url.trim)
+      .toSet
+    else ConfigHolder.ryftRestUrl.toSet
   }
 }

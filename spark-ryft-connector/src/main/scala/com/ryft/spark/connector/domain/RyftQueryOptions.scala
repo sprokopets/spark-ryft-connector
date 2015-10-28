@@ -30,6 +30,8 @@
 
 package com.ryft.spark.connector.domain
 
+import scala.language.postfixOps
+
 /**
  * Represents Meta information used for making request to Ryft
  *
@@ -38,34 +40,46 @@ package com.ryft.spark.connector.domain
  *                    characters before and after a search match will be included with data result
  * @param fuzziness Specify the fuzzy search distance [0..255]
  */
-case class RyftQueryOptions(
-    files: List[String],
+case class RyftQueryOptions(files: List[String],
     surrounding: Int,
     fuzziness: Byte,
-    fields: List[String])
+    fields: List[String],
+    ryftPartitions: Set[String]) {
+  def copyWith(files: List[String] = this.files,
+      surrounding: Int = this.surrounding,
+      fuzziness: Byte = this.fuzziness,
+      fields: List[String] = this.fields,
+      ryftPartitions: Set[String] = this.ryftPartitions) = {
+    RyftQueryOptions(files, surrounding, fuzziness, fields, ryftPartitions)
+  }
+}
 
 object RyftQueryOptions {
   def apply(file: String) = {
-    new RyftQueryOptions(List(file), 0, 0 toByte, Nil)
+    new RyftQueryOptions(List(file), 0, 0 toByte, Nil, Set.empty)
   }
 
   def apply(files: List[String]) = {
-    new RyftQueryOptions(files, 0, 0 toByte, Nil)
+    new RyftQueryOptions(files, 0, 0 toByte, Nil, Set.empty)
   }
 
   def apply(file: String, surrounding: Int, fuzziness: Byte) = {
-    new RyftQueryOptions(List(file), surrounding, fuzziness, Nil)
+    new RyftQueryOptions(List(file), surrounding, fuzziness, Nil, Set.empty)
   }
 
   def apply(files: List[String], surrounding: Int, fuzziness: Byte) = {
-    new RyftQueryOptions(files, surrounding, fuzziness, Nil)
+    new RyftQueryOptions(files, surrounding, fuzziness, Nil, Set.empty)
   }
 
   def apply(file: String, fields: List[String]) = {
-    new RyftQueryOptions(List(file), 0, 0 toByte, fields)
+    new RyftQueryOptions(List(file), 0, 0 toByte, fields, Set.empty)
   }
 
   def apply(files: List[String], fields: List[String]) = {
-    new RyftQueryOptions(files, 0, 0 toByte, fields)
+    new RyftQueryOptions(files, 0, 0 toByte, fields, Set.empty)
+  }
+
+  def apply(files: List[String], fields: List[String], ryftPartitions: Set[String]) = {
+    new RyftQueryOptions(files, 0, 0 toByte, fields, ryftPartitions)
   }
 }

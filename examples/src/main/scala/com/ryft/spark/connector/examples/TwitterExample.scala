@@ -69,22 +69,23 @@ object TwitterExample extends App with Logging {
     .set("spark.locality.wait", "120s")
     .set("spark.locality.wait.node", "120s")
 
-  val sc = new SparkContext(sparkConf)
-  val ssc = new StreamingContext(sc, Seconds(timeWindow))
-
-  val stream = TwitterUtils.createStream(ssc, None, List(filter), StorageLevel.MEMORY_AND_DISK_SER_2)
-  val mentionedCandidates = stream.flatMap(status => status.getText.split(" "))
-    .filter(candidates.contains)
-
-  mentionedCandidates.foreachRDD(rdd => {
-    val rddCount = rdd.map(word => (word, 1))
-      .reduceByKey((a, b) => a + b)
-
-    val candidates = rdd.collect().toList
-    val simpleQueries = candidates.map(SimpleQuery(_))
-    val ryftRDD = sc.ryftPairRDD(simpleQueries,queryOptions)
-  })
-
-  ssc.start()
-  ssc.awaitTermination()
+  //FIXME: not working because of new RDD implementation
+//  val sc = new SparkContext(sparkConf)
+//  val ssc = new StreamingContext(sc, Seconds(timeWindow))
+//
+//  val stream = TwitterUtils.createStream(ssc, None, List(filter), StorageLevel.MEMORY_AND_DISK_SER_2)
+//  val mentionedCandidates = stream.flatMap(status => status.getText.split(" "))
+//    .filter(candidates.contains)
+//
+//  mentionedCandidates.foreachRDD(rdd => {
+//    val rddCount = rdd.map(word => (word, 1))
+//      .reduceByKey((a, b) => a + b)
+//
+//    val candidates = rdd.collect().toList
+//    val simpleQueries = candidates.map(SimpleQuery(_))
+//    val ryftRDD = sc.ryftPairRDD(simpleQueries,queryOptions)
+//  })
+//
+//  ssc.start()
+//  ssc.awaitTermination()
 }

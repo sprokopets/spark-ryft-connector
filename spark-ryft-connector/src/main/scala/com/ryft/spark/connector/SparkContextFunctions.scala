@@ -31,10 +31,10 @@
 package com.ryft.spark.connector
 
 import com.ryft.spark.connector.config.ConfigHolder
-import com.ryft.spark.connector.query.{RyftQuery, RecordQuery, SimpleQuery}
+import com.ryft.spark.connector.query.{RecordQuery, RyftQuery, SimpleQuery}
 import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.rdd.{RDDQuery, RyftRDDSimple, RyftPairRDD}
-import com.ryft.spark.connector.util.{TransformFunctions, RyftQueryHelper}
+import com.ryft.spark.connector.rdd.{RyftRDD, RyftPairRDD}
+import com.ryft.spark.connector.util.TransformFunctions
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -48,24 +48,22 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
    * This method is made available on [[org.apache.spark.SparkContext SparkContext]] by importing
    * `com.ryft.spark.connector._`
    *
-   * @param queries Search queries
+   * @param query Search query
    * @param queryOptions Query specific options
    * @param choosePartitions Function provides partitions for `RyftQuery`
    * @param preferredLocations Function provided spark preferred nodes for `RyftQuery`
    * @return
    */
-  def ryftRDD(
-      queries: List[RyftQuery],
-      queryOptions: RyftQueryOptions,
-      choosePartitions: RyftQuery => Set[String] = _ => Set.empty[String],
-      preferredLocations: String => Set[String] = _ => Set.empty[String]) = {
-    
-    val preparedQueries = prepareQueries(queries, queryOptions, choosePartitions, preferredLocations)
-    queries match {
-      case (sqList: SimpleQuery) :: tail =>
-        new RyftRDDSimple(sc, preparedQueries, TransformFunctions.toRyftData)
-      case (rqList: RecordQuery) :: tail =>
-        new RyftRDDSimple(sc, preparedQueries, TransformFunctions.noTransform)
+  def ryftRDD(query: RyftQuery,
+              queryOptions: RyftQueryOptions,
+              choosePartitions: RyftQuery => Set[String] = _ => Set.empty[String],
+              preferredLocations: String => Set[String] = _ => Set.empty[String]) = {
+    val qo = queryOptions.copyWith(ryftPartitions = partitions(sc.getConf, query, choosePartitions))
+    query match {
+      case sq: SimpleQuery =>
+        new RyftRDD(sc, sq, qo, TransformFunctions.toRyftData)
+      case rq: RecordQuery =>
+        new RyftRDD(sc, rq, qo, TransformFunctions.noTransform)
       case _                             =>
         val msg = "Unable to create RyftRDDSimple. Unrecognized type of Ryft queries"
         logWarning(msg)
@@ -79,21 +77,21 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
    * This method is made available on [[org.apache.spark.SparkContext SparkContext]] by importing
    * `com.ryft.spark.connector._`
    *
-   * @param queries Search queries
+   * @param query Search query
    * @param queryOptions Query specific options
    * @param choosePartitions Function provides partitions for `RyftQuery`
    * @param preferredLocations Function provided spark preferred nodes for `RyftQuery`
    */
-  def ryftPairRDD(queries: List[RyftQuery],
+  def ryftPairRDD(query: RyftQuery,
                   queryOptions: RyftQueryOptions,
                   choosePartitions: RyftQuery => Set[String] = _ => Set.empty[String],
                   preferredLocations: String => Set[String] = _ => Set.empty[String]) = {
-    val preparedQueries = prepareQueries(queries, queryOptions, choosePartitions, preferredLocations)
-    queries match {
-      case (sqList: SimpleQuery) :: tail =>
-        new RyftPairRDD(sc, preparedQueries, TransformFunctions.toRyftData)
-      case (rqList: RecordQuery) :: tail =>
-        new RyftPairRDD(sc, preparedQueries, TransformFunctions.noTransform)
+    val qo = queryOptions.copyWith(ryftPartitions = partitions(sc.getConf, query, choosePartitions))
+    query match {
+      case sq: SimpleQuery =>
+        new RyftPairRDD(sc, sq, qo, TransformFunctions.toRyftData)
+      case rq: RecordQuery =>
+        new RyftPairRDD(sc, rq, qo, TransformFunctions.noTransform)
       case _                             =>
         val msg = "Unable to create RyftRDDSimple. Unrecognized type of Ryft queries"
         logWarning(msg)
@@ -101,38 +99,19 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
     }
   }
 
-  /**
-   * Prepare queries needed to create RyftRDDs
-   *
-   * @param queries Search queries
-   * @param queryOptions Query specific options
-   * @param choosePartitions Function provides partitions for `RyftQuery`
-   * @param preferredLocations Function provided spark preferred nodes for `RyftQuery`
-   * @return Sequence of RDD queries Iterable[RDDQuery]
-   */
-  private def prepareQueries(queries: List[RyftQuery],
-                             queryOptions: RyftQueryOptions,
-                             choosePartitions: RyftQuery => Set[String],
-                             preferredLocations: String => Set[String]) = {
-    val restUrls = ryftRestUrls(sc.getConf)
-    queries.flatMap(q => {
-      val ryftQueryS = RyftQueryHelper.queryAsString(q, queryOptions)
-      val partitions = choosePartitions(q)
-
-      val urls =
-        if (partitions.nonEmpty) partitions
-        else restUrls
-
-      urls.map(url => RDDQuery(ryftQueryS._1, url + ryftQueryS._2, preferredLocations(url)))
-    })
-  }
-
-  private def ryftRestUrls(sparkConf: SparkConf): List[String] = {
+  private def partitions(sparkConf: SparkConf, ryftQuery: RyftQuery,
+                         choosePartitions: RyftQuery => Set[String]): Set[String] = {
     val urlOption = sparkConf.getOption("spark.ryft.rest.url")
-    if (urlOption.nonEmpty) urlOption.get
-      .split(",")
-      .map(url => url.trim)
-      .toList
-    else ConfigHolder.ryftRestUrl.toList
+    val restUrls =
+      if (urlOption.nonEmpty) urlOption.get
+        .split(",")
+        .map(url => url.trim)
+        .toSet
+      else ConfigHolder.ryftRestUrl.toSet
+
+    val partitions = choosePartitions(ryftQuery)
+
+    if (partitions.nonEmpty) partitions
+    else restUrls
   }
 }

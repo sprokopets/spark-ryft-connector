@@ -30,26 +30,46 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
-import com.ryft.spark.connector.query.SimpleQuery
-import com.ryft.spark.connector.rdd.RyftRDD
-import org.apache.spark.{Logging, SparkContext, SparkConf}
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.types._
+import org.apache.spark.{SparkConf, SparkContext}
 import com.ryft.spark.connector._
 
-import scala.language.postfixOps
-
-object SimpleRDDExample extends App with Logging {
+object DataFrameExample extends App {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
-    .set("spark.ryft.rest.url", "http://52.20.99.136:8765")
+    .setMaster("local[2]")
 
   val sc = new SparkContext(sparkConf)
+  val sqlContext = new SQLContext(sc)
 
-  val query = SimpleQuery(List("Jones"))
-  val metaInfo = RyftQueryOptions("passengers.txt", 10, 0 toByte)
+  //TODO: try to find out schema from first Row
+  val schema = StructType(Seq(
+    StructField("Arrest", BooleanType), StructField("Beat", IntegerType),
+    StructField("Block", StringType), StructField("CaseNumber", IntegerType),
+    StructField("CommunityArea", IntegerType), StructField("Date", StringType),
+    StructField("Description", StringType), StructField("District", IntegerType),
+    StructField("Domestic", BooleanType), StructField("FBICode", IntegerType),
+    StructField("ID", StringType), StructField("IUCR", IntegerType),
+    StructField("Latitude", DoubleType), StructField("Location", StringType),
+    StructField("LocationDescription", StringType), StructField("Longitude", DoubleType),
+    StructField("PrimaryType", StringType), StructField("UpdatedOn", StringType),
+    StructField("Ward", IntegerType), StructField("XCoordinate", IntegerType),
+    StructField("YCoordinate", IntegerType), StructField("Year", IntegerType),
+    StructField("_index", StructType(Seq(
+        StructField("file", StringType), StructField("offset", StringType),
+        StructField("length", IntegerType), StructField("fuzziness", ByteType)))
+    )
+  ))
 
-  val ryftRDD = sc.ryftRDD(query,metaInfo)
-  logInfo("RDD count: "+ryftRDD.asInstanceOf[RyftRDD[RyftData]].count())
+  sqlContext.read.ryft(schema, "*.pcrime", "temp_table")
+
+  val df = sqlContext.sql(
+    """select Date, ID, Description, _index from temp_table
+       where Description LIKE '%VEHICLE%'
+          AND (Date LIKE '%04/15/2015%' OR Date LIKE '%04/14/2015%' OR Date LIKE '%04/13/2015%')
+       ORDER BY Date
+    """)
+    .collect()
+  println()
 }
