@@ -28,8 +28,6 @@
  * ============
  */
 
-package com.ryft.spark.connector
+package com.ryft.spark.connector.exception
 
-case class RyftSparkException(msg: String)
-  extends RuntimeException(msg) {
-}
+case class RyftSparkException(msg: String) extends RuntimeException(msg)

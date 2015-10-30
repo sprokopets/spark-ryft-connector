@@ -28,6 +28,28 @@
  * ============
  */
 
-package com.ryft.spark.connector.query
+package com.ryft.spark.connector.sql
 
-abstract class RyftQuery
+import com.ryft.spark.connector.exception.RyftSparkException
+import org.apache.spark.Logging
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.sources.{SchemaRelationProvider, BaseRelation, RelationProvider}
+import org.apache.spark.sql.types.StructType
+
+class DefaultSource extends SchemaRelationProvider with Logging {
+  override def createRelation(@transient sqlContext: SQLContext,
+      parameters: Map[String, String],
+      schema: StructType): BaseRelation = {
+    val files = parameters.getOrElse("files", {
+      val msg = "Required parameter files was not specified"
+      logWarning(msg)
+      throw new RyftSparkException(msg)
+    }).split(",").toList
+
+    logInfo(s"Creating Ryft Relation: " +
+      s"\nfiles: ${files.mkString(",")}" +
+      s"\nschema: ${schema.treeString}")
+    new RyftRelation(files, schema)(sqlContext)
+  }
+}
+

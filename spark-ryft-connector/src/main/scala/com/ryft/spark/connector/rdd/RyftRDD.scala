@@ -30,79 +30,37 @@
 
 package com.ryft.spark.connector.rdd
 
-import _root_.spray.json.DefaultJsonProtocol
-import _root_.spray.json.JsArray
-import _root_.spray.json.JsNumber
-import _root_.spray.json.JsObject
-import _root_.spray.json.JsString
-import org.apache.spark.annotation.DeveloperApi
+import com.ryft.spark.connector.domain.RyftQueryOptions
+import com.ryft.spark.connector.query.RyftQuery
 import org.apache.spark.{TaskContext, Partition, SparkContext}
-import org.apache.spark.rdd.RDD
-import spray.json._
-import DefaultJsonProtocol._
+import org.apache.spark.annotation.DeveloperApi
 
 import scala.reflect.ClassTag
 
-/**
- * RDD representing of a RyftQuery.
- *
- * This class is the main entry point for analyzing data using Ryft with Spark.
- */
-abstract class RyftRDD [T: ClassTag, R](@transient sc: SparkContext,
-                               queries: Iterable[RDDQuery])
-  extends RDD[T](sc, Nil) {
+class RyftRDD[T: ClassTag](@transient sc: SparkContext,
+     override val rddQueries: Seq[RDDQuery],
+     override val queryOptions: RyftQueryOptions,
+     val transform: Map[String, Any] => T)
+  extends RyftAbstractRDD[T, T](sc, rddQueries, queryOptions) {
 
   @DeveloperApi
-  override def compute(split: Partition, context: TaskContext): Iterator[T]
-
-  override protected def getPartitions: Array[Partition] = {
-    val partitioner = new RyftRDDPartitioner
-    val partitions = partitioner.partitions(queries)
-    logDebug(s"Created total ${partitions.length} partitions.")
-    logDebug("Partitions: \n" + partitions.mkString("\n"))
-    partitions
-  }
-
-  override protected def getPreferredLocations(split: Partition): Seq[String] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val partition = split.asInstanceOf[RyftRDDPartition]
-    logDebug(("Preferred locations for partition:" +
-      "\npartitions idx: %s" +
-      "\nlocations: %s")
-      .format(partition.idx, partition.preferredLocations.mkString("\n")))
-    partition.preferredLocations.toSeq
-  }
-}
+    val idx = partition.idx
 
-/**
- * Describes `RyftRDD` partition
- *
- * @param idx Identifier of the partition, used internally by Spark
- * @param key Search query key
- * @param query Ryft REST query
- * @param preferredLocations Preferred spark workers
- */
-case class RyftRDDPartition(idx: Int,
-                            key: String,
-                            query: String,
-                            preferredLocations: Set[String])
-  extends Partition {
-  override def index: Int = idx
-  override def toString: String = JsObject(
-    Map(
-      "idx" -> JsNumber(idx),
-      "key" -> JsString(key),
-      "query" -> JsString(query),
-      "preferredLocations" -> JsArray(preferredLocations.map(_.toJson).toVector)
-    )).toJson.prettyPrint
-}
+    new NextIterator[T,T](partition, transform) {
+      logDebug(s"Start processing iterator for partition with idx: $idx")
 
-/**
- * Simple `RyftRDD` partitioner to prepare partitions
- */
-class RyftRDDPartitioner {
-  def partitions(queries: Iterable[RDDQuery]): Array[Partition] = {
-    (for((query,i) <- queries.zipWithIndex) yield {
-      new RyftRDDPartition(i, query.key, query.query, query.preferredLocation)
-    }).toArray[Partition]
+      override def next(): T = {
+        if (accumulator.isEmpty) {
+          logWarning("Next element does not exist")
+          throw new RuntimeException("Next element does not exist")
+        }
+
+        val elem = transform(accumulator)
+        accumulator = Map.empty[String, String]
+        elem
+      }
+    }
   }
 }

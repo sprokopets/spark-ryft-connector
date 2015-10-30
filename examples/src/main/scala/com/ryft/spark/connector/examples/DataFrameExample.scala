@@ -30,34 +30,47 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.types._
+import org.apache.spark.{SparkConf, SparkContext}
 import com.ryft.spark.connector._
 
-import scala.language.postfixOps
-
-object StreamExample extends App {
-  val lines = scala.io.Source.fromURL(args(0)).getLines().toSeq
-
+object DataFrameExample extends App {
   val sparkConf = new SparkConf()
-    .setAppName("StreamExample")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
+    .setAppName("SimplePairRDDExample")
+    .setMaster("local[2]")
 
   val sc = new SparkContext(sparkConf)
-  val r = scala.util.Random
+  val sqlContext = new SQLContext(sc)
 
-  val metaInfo = RyftQueryOptions("reddit/*", 10, 0 toByte)
-  //FIXME: the same in TwitterExample, but looks like we at all don't need this example
-//  while(true) {
-//    val words = (0 until 5).map(_ => {
-//      lines(r.nextInt(lines.size))
-//    }).toList
-//
-//    val queries = words.map(w => SimpleQuery(List(w)))
-//    val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
-//    val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
-//    println("\n\ncount: "+count.mkString("\n"))
-//    Thread.sleep(10000)
-//  }
+  //TODO: try to find out schema from first Row
+  val schema = StructType(Seq(
+    StructField("Arrest", BooleanType), StructField("Beat", IntegerType),
+    StructField("Block", StringType), StructField("CaseNumber", IntegerType),
+    StructField("CommunityArea", IntegerType), StructField("Date", StringType),
+    StructField("Description", StringType), StructField("District", IntegerType),
+    StructField("Domestic", BooleanType), StructField("FBICode", IntegerType),
+    StructField("ID", StringType), StructField("IUCR", IntegerType),
+    StructField("Latitude", DoubleType), StructField("Location", StringType),
+    StructField("LocationDescription", StringType), StructField("Longitude", DoubleType),
+    StructField("PrimaryType", StringType), StructField("UpdatedOn", StringType),
+    StructField("Ward", IntegerType), StructField("XCoordinate", IntegerType),
+    StructField("YCoordinate", IntegerType), StructField("Year", IntegerType),
+    StructField("_index", StructType(Seq(
+        StructField("file", StringType), StructField("offset", StringType),
+        StructField("length", IntegerType), StructField("fuzziness", ByteType)))
+    )
+  ))
+
+  sqlContext.read.ryft(schema, "*.pcrime", "temp_table")
+
+  val df = sqlContext.sql(
+    """select Date, ID, Description, Arrest from temp_table
+       where Description LIKE '%VEHICLE%'
+          AND (Date LIKE '%04/15/2015%' OR Date LIKE '%04/14/2015%' OR Date LIKE '%04/13/2015%')
+          AND Arrest = true
+       ORDER BY Date
+    """)
+    .collect()
+  println()
 }

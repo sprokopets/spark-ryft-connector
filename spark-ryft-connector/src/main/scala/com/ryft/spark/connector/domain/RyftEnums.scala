@@ -43,8 +43,8 @@ case object or extends LogicalOperator {val value = "OR"}
 case object xor extends LogicalOperator {val value = "XOR"}
 
 sealed trait RelationalOperator {def value: String}
-case object equals extends RelationalOperator{val value = "EQUALS"}
-case object notEquals extends RelationalOperator{val value = "NOT_EQUALS"}
+case object equalTo extends RelationalOperator{val value = "EQUALS"}
+case object notEqualTo extends RelationalOperator{val value = "NOT_EQUALS"}
 case object contains extends RelationalOperator {val value = "CONTAINS"}
 case object notContains extends RelationalOperator{val value = "NOT_CONTAINS"}
 

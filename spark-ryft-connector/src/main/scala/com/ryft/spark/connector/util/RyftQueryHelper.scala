@@ -30,35 +30,41 @@
 
 package com.ryft.spark.connector.util
 
-import com.ryft.spark.connector.RyftSparkException
+import com.ryft.spark.connector.exception.RyftSparkException
+import com.ryft.spark.connector.query.filter._
 import com.ryft.spark.connector.query._
 import org.apache.spark.Logging
-import scala.annotation.tailrec
 import scala.reflect.runtime.universe._
 import com.ryft.spark.connector.domain._
 
 /**
  * Provides helper functions specific for Ryft
  */
-private [connector] object RyftQueryHelper extends Logging{
-  def queryAsString[RyftQuery: TypeTag](ryftQuery: RyftQuery, queryOptions: RyftQueryOptions) = {
+private [connector] object RyftQueryHelper extends Logging {
+  private val OR = "OR"
+  private val AND = "AND"
+
+  def keyQueryPair[RyftQuery: TypeTag](ryftQuery: RyftQuery, queryOptions: RyftQueryOptions) = {
     val ryftQueryS =
       ryftQuery match {
         case sq: SimpleQuery =>
           val queryS = s"(${queryToString(sq)})"
-          val queryEncoded = UrlEncoder.encode(queryS) + queryOptionsToString(queryOptions)
+          val queryEncoded = encode(queryS) + queryOptionsToString(queryOptions)
           (sq.queries.mkString(","), queryEncoded)
 
         case rq: RecordQuery =>
-          val queryString = s"(${queryToString(rq)})"
+          val queryString = queryToString(rq)
           val files = new StringBuilder
-          queryOptions.files.foreach(f => files.append(s"&files=${UrlEncoder.encode(f)}"))
-          val queryEncoded = UrlEncoder.encode(queryToString(rq)) + files + "&format=xml"
+          queryOptions.files.foreach(f => files.append(s"&files=${encode(f)}"))
+          val fields =
+            if (queryOptions.fields.nonEmpty) s"&fields=${queryOptions.fields.mkString(",")}"
+            else ""
+          val queryEncoded = encode(queryToString(rq)) + files + "&format=xml" + fields
           (queryString, queryEncoded)
 
         case _ =>
-          val msg = "Unable to convert RyftQuery to string. " +
-            "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
+          val msg = s"Unable to convert RyftQuery to string. " +
+            s"Unrecognized RyftQuery subtype: ${typeOf[RyftQuery]}"
           logWarning(msg)
           throw new RyftSparkException(msg)
       }
@@ -66,46 +72,75 @@ private [connector] object RyftQueryHelper extends Logging{
     (ryftQueryS._1, s"/search?query=${ryftQueryS._2}")
   }
 
-  private def queryToString(query: SimpleQuery): String = {
+  def queryToString(query: SimpleQuery): String = {
     val queries = query.queries
-    val preparedQueries = new StringBuilder(s"""(${rawText.value} ${contains.value} \"${queries.head}\")""")
+    val preparedQueries = new StringBuilder(s"""(${rawText.value} ${contains.value} "${queries.head}")""")
     if (queries.tail.nonEmpty) {
-      queries.tail.foreach(q => preparedQueries.append(s"""OR(${rawText.value} ${contains.value} \"$q\")"""))
+      queries.tail.foreach(q => preparedQueries.append(s"""OR(${rawText.value} ${contains.value} "$q")"""))
     }
 
-    preparedQueries.toString()
+    if(queries.size > 1) s"(${preparedQueries.toString()})"
+    else preparedQueries.toString()
   }
 
-  private def queryToString(query: RecordQuery): String = {
-    queryToString(query.queries, "")
+  def queryToString(rq: RecordQuery): String = {
+    val result = rq.filters.map {filter =>
+      if (isOneLayerTree(filter)) filterToString(filter)
+      else s"""(${filterToString(filter)})"""
+    }.mkString(AND)
+
+    if (rq.filters.size > 1) s"($result)"
+    else result
   }
 
-  @tailrec
-  private def queryToString(queries: List[GenericQuery], acc: String): String = {
-    if (queries.isEmpty) acc
-    else {
-      val head = queries.head
-      head match {
-        case sq: SingleQuery => queryToString(queries.tail,
-          sq.lo.value + queryToString(sq) + acc)
+  private def filterToString(f: Filter): String = f match {
+      //TODO: implement NOT
+    case EqualTo(attr, v) => s"""($attr EQUALS "$v")"""
+    case NotEqualTo(attr, v) => s"""($attr NOT_EQUALS "$v")"""
+    case Contains(attr, v) => s"""($attr CONTAINS "$v")"""
+    case NotContains(attr, v) => s"""($attr NOT_CONTAINS "$v")"""
 
-        case rq: RecordQuery => queryToString(queries.tail,
-          rq.lo.value + "(" + queryToString(rq) + ")" + acc)
+    case Or(left, right) =>
+      val leftResult =
+        if (left.isInstanceOf[And]) s"(${filterToString(left)})"
+        else s"${filterToString(left)}"
 
-        case _ => throw new RyftSparkException("Unexpected Ryft Query Type")
-      }
-    }
+      val rightResult =
+        if (right.isInstanceOf[And]) s"(${filterToString(right)})"
+        else s"${filterToString(right)}"
+
+      s"$leftResult$OR$rightResult"
+
+    case And(left, right) =>
+      val leftResult =
+        if (left.isInstanceOf[Or]) s"(${filterToString(left)})"
+        else s"${filterToString(left)}"
+
+      val rightResult =
+        if (right.isInstanceOf[Or]) s"(${filterToString(right)})"
+        else s"${filterToString(right)}"
+
+      s"$leftResult$AND$rightResult"
+
+    case _ =>
+      println("error: "+ f)
+      throw new RuntimeException //TODO: exception + message
   }
 
-  private def queryToString(query: SingleQuery) = {
-    s"""(${query.is.value} ${query.ro.value} \"${query.query}\")"""
+  private def isOneLayerTree(f: Filter) = f match {
+    case EqualTo(attr, v) => true
+    case Contains(attr, v) => true
+    //TODO: Not ??
+    case _ => false
   }
 
   private def queryOptionsToString(queryOptions: RyftQueryOptions): String = {
     val files = new StringBuilder
-    queryOptions.files.foreach(f => files.append(s"&files=${UrlEncoder.encode(f)}"))
+    queryOptions.files.foreach(f => files.append(s"&files=${encode(f)}"))
     s"$files" +
       s"&surrounding=${queryOptions.surrounding}" +
       s"&fuzziness=${queryOptions.fuzziness}"
   }
+
+  private def encode(s: String) = java.net.URLEncoder.encode(s, "utf-8").replace("+","%20")
 }

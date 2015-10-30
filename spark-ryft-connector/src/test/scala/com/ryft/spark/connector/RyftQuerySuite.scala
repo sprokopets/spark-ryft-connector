@@ -30,9 +30,8 @@
 
 package com.ryft.spark.connector
 
-
 import com.ryft.spark.connector.domain.{record, RyftQueryOptions, contains, recordField}
-import com.ryft.spark.connector.query.{SimpleQuery, RecordQuery}
+import com.ryft.spark.connector.query.{RecordQuery, SimpleQuery}
 import com.ryft.spark.connector.util.RyftQueryHelper
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
@@ -45,20 +44,29 @@ class RyftQuerySuite extends JUnitSuite {
   @Test def testSimpleQuery() {
     val query = SimpleQuery("query0")
 
-    val queryS = "((RAW_TEXT CONTAINS \"query0\"))"
+    val queryS = s"""(RAW_TEXT CONTAINS "query0")"""
 
-    val ryftQuery = RyftQueryHelper.queryAsString(query, queryOptions)
-    assertEquals(queryS, ryftQuery._1)
+    val ryftQuery = RyftQueryHelper.queryToString(query)
+    assertEquals(queryS, ryftQuery)
   }
 
   @Test def testSimpleQueryComplex() {
     val query = SimpleQuery(List("query0","query1","query2"))
 
-    val queryString = "((RAW_TEXT CONTAINS \"query0\")OR(RAW_TEXT CONTAINS \"query1\")OR" +
-      "(RAW_TEXT CONTAINS \"query2\"))"
+    val queryString = s"""((RAW_TEXT CONTAINS "query0")OR(RAW_TEXT CONTAINS "query1")OR""" +
+      s"""(RAW_TEXT CONTAINS "query2"))"""
 
-    val ryftQuery = RyftQueryHelper.queryAsString(query, queryOptions)
-    assertEquals(queryString, ryftQuery._1)
+    val ryftQuery = RyftQueryHelper.queryToString(query)
+    assertEquals(queryString, ryftQuery)
+  }
+
+  @Test def testSingleRyftRecordQuery() {
+    val query = RecordQuery(record, contains, "VEHICLE")
+
+    val queryString = s"""(RECORD CONTAINS "VEHICLE")"""
+
+    val ryftQuery = RyftQueryHelper.queryToString(query)
+    assertEquals(queryString, ryftQuery)
   }
 
   @Test def testRyftRecordQuery() {
@@ -66,11 +74,11 @@ class RyftQuerySuite extends JUnitSuite {
       RecordQuery(record, contains, "VEHICLE")
         .and(recordField("date"), contains, "04/15/2015")
 
-    val queryString = "((RECORD CONTAINS \"VEHICLE\")AND" +
-      "(RECORD.date CONTAINS \"04/15/2015\"))"
+    val queryString = s"""((RECORD.date CONTAINS "04/15/2015")AND"""+
+      s"""(RECORD CONTAINS "VEHICLE"))"""
 
-    val ryftQuery = RyftQueryHelper.queryAsString(query, queryOptions)
-    assertEquals(queryString, ryftQuery._1)
+    val ryftQuery = RyftQueryHelper.queryToString(query)
+    assertEquals(queryString, ryftQuery)
   }
 
   @Test def testRyftRecordQueryComplex() {
@@ -81,12 +89,12 @@ class RyftQuerySuite extends JUnitSuite {
           .or(recordField("desc"), contains, "MOTO"))
         .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
 
-    val queryString = "(((RECORD.desc CONTAINS \"VEHICLE\")OR" +
-      "(RECORD.desc CONTAINS \"BIKE\")OR" +
-      "(RECORD.desc CONTAINS \"MOTO\"))AND" +
-      "((RECORD.date CONTAINS \"04/15/2015\")))"
+    val queryString = s"""((RECORD.date CONTAINS "04/15/2015")AND"""+
+      s"""((RECORD.desc CONTAINS "MOTO")OR"""+
+      s"""(RECORD.desc CONTAINS "BIKE")OR"""+
+      s"""(RECORD.desc CONTAINS "VEHICLE")))"""
 
-    val ryftQuery = RyftQueryHelper.queryAsString(query, queryOptions)
-    assertEquals(queryString, ryftQuery._1)
+    val ryftQuery = RyftQueryHelper.queryToString(query)
+    assertEquals(queryString, ryftQuery)
   }
 }

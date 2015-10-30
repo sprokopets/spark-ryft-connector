@@ -30,35 +30,44 @@
 
 package com.ryft.spark.connector.rdd
 
-import org.apache.spark.{TaskContext, Partition, SparkContext}
-import org.apache.spark.annotation.DeveloperApi
+import com.ryft.spark.connector.rest.RyftRestConnection
+import com.ryft.spark.connector.util.SimpleJsonParser
+import org.apache.spark.{Partition, Logging}
+import org.msgpack.jackson.dataformat.MessagePackFactory
 
-import scala.reflect.ClassTag
+/**
+ * An iterator that allows to iterate through the stream of JSON objects.
+ * Used MessagePackFactory parser by default.
+ *
+ * `hasNext` reads next element from the stream to accumulator
+ * and returns true if element exists
+ *
+ */
+abstract class NextIterator[T,R](split: Partition, transform: Map[String, Any] => T)
+  extends Iterator[R] with Logging {
 
-class RyftRDDSimple[T: ClassTag](@transient sc: SparkContext,
-                                    queries: Iterable[RDDQuery],
-                                    transform: Map[String, Any] => T)
-  extends RyftRDD[T, T](sc, queries) {
+  private val partition = split.asInstanceOf[RyftRDDPartition]
+  logDebug(s"Compute partition, idx: ${partition.idx}")
 
-  @DeveloperApi
-  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
-    val partition = split.asInstanceOf[RyftRDDPartition]
-    val idx = partition.idx
+  val requestProperties = Map("Accept" -> "application/msgpack", "Transfer-Encoding" -> "chunked")
 
-    new RyftIterator[T,T](partition, transform) {
-      logDebug(s"Start processing iterator for partition with idx: $idx")
+  private val is = RyftRestConnection(partition.query, requestProperties).getInputStream
+  private val parser = new MessagePackFactory().createParser(is)
 
-      override def next(): T = {
-        if (accumulator.isEmpty) {
-          logWarning("Next element does not exist")
-          throw new RuntimeException("Next element does not exist")
-        }
+  protected var accumulator = Map.empty[String,String]
 
-        val elem = transform(accumulator)
-        accumulator = Map.empty[String, String]
-        elem
-      }
+  override def hasNext: Boolean = {
+    val json = SimpleJsonParser.parseJson(parser)
+    json match {
+      case acc: Map[String, String] =>
+        accumulator = json.asInstanceOf[Map[String,String]]
+        true
+      case _ =>
+        logDebug(s"Iterator processing ended for partition with idx: ${partition.idx}")
+        is.close()
+        false
     }
   }
-}
 
+  override def next(): R
+}

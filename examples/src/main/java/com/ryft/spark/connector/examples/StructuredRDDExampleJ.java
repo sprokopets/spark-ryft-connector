@@ -36,8 +36,7 @@ import com.ryft.spark.connector.japi.RyftJavaUtil;
 import com.ryft.spark.connector.japi.SparkContextJavaFunctions;
 import com.ryft.spark.connector.japi.rdd.RyftJavaRDD;
 import com.ryft.spark.connector.query.RecordQuery;
-import com.ryft.spark.connector.query.RyftQuery;
-import com.ryft.spark.connector.util.JavaApiHelper;
+import com.ryft.spark.connector.query.RecordQuery$;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import com.ryft.spark.connector.domain.contains$;
@@ -47,8 +46,6 @@ import org.slf4j.LoggerFactory;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.immutable.HashMap;
-import scala.collection.immutable.Set;
-import scala.runtime.AbstractFunction1;
 
 @SuppressWarnings("unchecked")
 public class StructuredRDDExampleJ {
@@ -66,7 +63,7 @@ public class StructuredRDDExampleJ {
         final SparkContext sc = new SparkContext(sparkConf);
         final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
 
-        final RecordQuery query = new RecordQuery(new recordField("date"), contains$.MODULE$, "04/15/2015")
+        final RecordQuery query = RecordQuery$.MODULE$.apply(new recordField("date"), contains$.MODULE$, "04/15/2015")
             .and(new recordField("desc"), contains$.MODULE$, "VEHICLE")
         .or(new recordField("date"), contains$.MODULE$, "04/14/2015")
             .and(new recordField("desc"), contains$.MODULE$, "VEHICLE");

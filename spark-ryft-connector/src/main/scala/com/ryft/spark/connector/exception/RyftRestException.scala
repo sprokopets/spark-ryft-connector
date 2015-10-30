@@ -28,43 +28,6 @@
  * ============
  */
 
-package com.ryft.spark.connector.rdd
+package com.ryft.spark.connector.exception
 
-import com.ryft.spark.connector.util.SimpleJsonParser
-import org.apache.spark.{Partition, Logging}
-import org.msgpack.jackson.dataformat.MessagePackFactory
-
-/**
- * An iterator that allows to iterate through the stream of JSON objects.
- * Used MessagePackFactory parser by default.
- *
- * `hasNext` reads next element from the stream to accumulator
- * and returns true if element exists
- *
- */
-abstract class RyftIterator[T,R](split: Partition, transform: Map[String, Any] => T)
-  extends Iterator[R] with Logging {
-
-  private val partition = split.asInstanceOf[RyftRDDPartition]
-  logDebug(s"Compute partition, idx: ${partition.idx}")
-
-  private val is = RyftRestConnection(partition.query).getInputStream
-  private val parser = new MessagePackFactory().createParser(is)
-
-  protected var accumulator = Map.empty[String,String]
-
-  override def hasNext: Boolean = {
-    val json = SimpleJsonParser.parseJson(parser)
-    json match {
-      case acc: Map[String, String] =>
-        accumulator = json.asInstanceOf[Map[String,String]]
-        true
-      case _ =>
-        logDebug(s"Iterator processing ended for partition with idx: ${partition.idx}")
-        is.close()
-        false
-    }
-  }
-
-  override def next(): R
-}
+case class RyftRestException(msg: String = null, exc: Throwable = null) extends Exception(msg, exc)

@@ -82,7 +82,7 @@ object TwitterExample extends App with Logging {
 
     val candidates = rdd.collect().toList
     val simpleQueries = candidates.map(SimpleQuery(_))
-    val ryftRDD = sc.ryftPairRDD(simpleQueries,queryOptions)
+    val ryftRDD = sc.ryftPairRDD(simpleQueries, queryOptions)
   })
 
   ssc.start()

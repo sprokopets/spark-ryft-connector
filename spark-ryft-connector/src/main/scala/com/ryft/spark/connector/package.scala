@@ -31,8 +31,34 @@
 package com.ryft.spark
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, DataFrameReader}
+
+import scala.language.implicitConversions
 
 package object connector {
   implicit def toSparkContextFunctions(sc: SparkContext): SparkContextFunctions =
     new SparkContextFunctions(sc)
+
+  /**
+   * Adds a method, `ryft`, to DataFrameReader that allows you to read ryft files using
+   * the DataFileReader
+   */
+  implicit class RyftDataFrameReader(reader: DataFrameReader) {
+    def ryft(schema: StructType,
+        files: String,
+        tempTable: String = "",
+        options: Map[String,String] = Map.empty): DataFrame = {
+
+      val df = reader.format("com.ryft.spark.connector.sql")
+        .schema(schema)
+        .option("files", files)
+        .options(options)
+        .load()
+
+      if (tempTable.nonEmpty) df.registerTempTable(tempTable)
+
+      df
+    }
+  }
 }
