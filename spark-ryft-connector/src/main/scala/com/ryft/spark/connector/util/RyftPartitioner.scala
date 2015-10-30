@@ -30,7 +30,6 @@
 
 package com.ryft.spark.connector.util
 
-import com.ryft.spark.connector.RyftSparkException
 import com.ryft.spark.connector.config.ConfigHolder
 import com.ryft.spark.connector.query._
 import org.apache.spark.Logging

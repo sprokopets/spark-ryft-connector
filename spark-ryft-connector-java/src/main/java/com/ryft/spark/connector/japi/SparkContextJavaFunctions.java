@@ -31,7 +31,6 @@
 package com.ryft.spark.connector.japi;
 
 import com.ryft.spark.connector.SparkContextFunctions;
-import com.ryft.spark.connector.domain.RyftData;
 import com.ryft.spark.connector.domain.RyftQueryOptions;
 import com.ryft.spark.connector.query.RecordQuery;
 import com.ryft.spark.connector.query.RyftQuery;
@@ -44,7 +43,6 @@ import org.apache.spark.SparkContext;
 import scala.Function1;
 import scala.Tuple2;
 import scala.collection.immutable.Set;
-import scala.collection.immutable.HashMap;
 import scala.reflect.ClassTag;
 
 import static com.ryft.spark.connector.util.JavaApiHelper.getClassTag;

@@ -30,7 +30,7 @@
 
 package com.ryft.spark.connector.util
 
-import com.ryft.spark.connector.RyftSparkException
+import com.ryft.spark.connector.exception.RyftSparkException
 import com.ryft.spark.connector.query.filter._
 import com.ryft.spark.connector.query._
 import org.apache.spark.Logging
@@ -44,22 +44,22 @@ private [connector] object RyftQueryHelper extends Logging {
   private val OR = "OR"
   private val AND = "AND"
 
-  def queryAsString[RyftQuery: TypeTag](ryftQuery: RyftQuery, queryOptions: RyftQueryOptions) = {
+  def keyQueryPair[RyftQuery: TypeTag](ryftQuery: RyftQuery, queryOptions: RyftQueryOptions) = {
     val ryftQueryS =
       ryftQuery match {
         case sq: SimpleQuery =>
           val queryS = s"(${queryToString(sq)})"
-          val queryEncoded = UrlEncoder.encode(queryS) + queryOptionsToString(queryOptions)
+          val queryEncoded = encode(queryS) + queryOptionsToString(queryOptions)
           (sq.queries.mkString(","), queryEncoded)
 
         case rq: RecordQuery =>
           val queryString = queryToString(rq)
           val files = new StringBuilder
-          queryOptions.files.foreach(f => files.append(s"&files=${UrlEncoder.encode(f)}"))
+          queryOptions.files.foreach(f => files.append(s"&files=${encode(f)}"))
           val fields =
             if (queryOptions.fields.nonEmpty) s"&fields=${queryOptions.fields.mkString(",")}"
             else ""
-          val queryEncoded = UrlEncoder.encode(queryToString(rq)) + files + "&format=xml" + fields
+          val queryEncoded = encode(queryToString(rq)) + files + "&format=xml" + fields
           (queryString, queryEncoded)
 
         case _ =>
@@ -136,9 +136,11 @@ private [connector] object RyftQueryHelper extends Logging {
 
   private def queryOptionsToString(queryOptions: RyftQueryOptions): String = {
     val files = new StringBuilder
-    queryOptions.files.foreach(f => files.append(s"&files=${UrlEncoder.encode(f)}"))
+    queryOptions.files.foreach(f => files.append(s"&files=${encode(f)}"))
     s"$files" +
       s"&surrounding=${queryOptions.surrounding}" +
       s"&fuzziness=${queryOptions.fuzziness}"
   }
+
+  private def encode(s: String) = java.net.URLEncoder.encode(s, "utf-8").replace("+","%20")
 }

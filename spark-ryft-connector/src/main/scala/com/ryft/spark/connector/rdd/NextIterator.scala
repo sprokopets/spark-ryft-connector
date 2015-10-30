@@ -30,6 +30,7 @@
 
 package com.ryft.spark.connector.rdd
 
+import com.ryft.spark.connector.rest.RyftRestConnection
 import com.ryft.spark.connector.util.SimpleJsonParser
 import org.apache.spark.{Partition, Logging}
 import org.msgpack.jackson.dataformat.MessagePackFactory
@@ -48,7 +49,9 @@ abstract class NextIterator[T,R](split: Partition, transform: Map[String, Any] =
   private val partition = split.asInstanceOf[RyftRDDPartition]
   logDebug(s"Compute partition, idx: ${partition.idx}")
 
-  private val is = RyftRestConnection(partition.query).getInputStream
+  val requestProperties = Map("Accept" -> "application/msgpack", "Transfer-Encoding" -> "chunked")
+
+  private val is = RyftRestConnection(partition.query, requestProperties).getInputStream
   private val parser = new MessagePackFactory().createParser(is)
 
   protected var accumulator = Map.empty[String,String]

@@ -28,18 +28,6 @@
  * ============
  */
 
-package com.ryft.spark.connector.util
+package com.ryft.spark.connector.exception
 
-import com.ryft.spark.connector.config.ConfigHolder
-import org.apache.spark.SparkConf
-
-//TODO: Some common place, need to rethink util package
-object RyftUtil {
-  def ryftRestUrls(sparkConf: SparkConf): Seq[String] = {
-    val urlOption = sparkConf.getOption("spark.ryft.rest.url")
-    if (urlOption.nonEmpty) urlOption.get
-      .split(",")
-      .map(url => url.trim)
-    else ConfigHolder.ryftRestUrl.toSeq
-  }
-}
+case class RyftSparkException(msg: String) extends RuntimeException(msg)

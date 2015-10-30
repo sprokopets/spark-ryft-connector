@@ -30,9 +30,7 @@
 
 package com.ryft.spark.connector.rdd
 
-import com.ryft.spark.connector.RyftSparkException
-import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.query.RyftQuery
+import com.ryft.spark.connector.exception.RyftSparkException
 import org.apache.spark.Logging
 
 /**

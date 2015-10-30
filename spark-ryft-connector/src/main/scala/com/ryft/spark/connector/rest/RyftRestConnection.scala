@@ -28,11 +28,15 @@
  * ============
  */
 
-package com.ryft.spark.connector.rdd
+package com.ryft.spark.connector.rest
 
 import java.net.{HttpURLConnection, URL}
 
+import com.ryft.spark.connector.exception.RyftRestException
+import org.apache.commons.io.IOUtils
 import org.apache.spark.Logging
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * Represents simple connection to Ryft Rest service.
@@ -42,16 +46,49 @@ import org.apache.spark.Logging
  *
  * @param url Ryft Rest query
  */
-case class RyftRestConnection(url: String) extends Logging {
-  private val connection = new URL(url)
-    .openConnection()
-    .asInstanceOf[HttpURLConnection]
+class RyftRestConnection(url: String,
+    requestProperties: Map[String, String] = Map.empty[String,String])
+  extends Logging {
 
-  connection.setRequestProperty("Accept", "application/msgpack")
-  connection.setRequestProperty("Transfer-Encoding","chunked")
+  private val connection = (Try(new URL(url).openConnection()) match {
+    case Success(urlConnection) => urlConnection
+    case Failure(ex) =>
+      val msg = s"Unable to open url connection: $url"
+      logWarning(msg)
+      throw new RyftRestException(msg, ex)
+  }).asInstanceOf[HttpURLConnection]
 
-  logDebug("Used request header: \nAccept: application/msgpack")
-  logDebug("Used request header: \nTransfer-Encoding: chunked")
+  requestProperties.foreach { case (key, value) =>
+    logDebug(s"Used request header: '$key: $value'")
+    connection.setRequestProperty(key, value)
+  }
 
-  def getInputStream = connection.getInputStream
+  def getInputStream = Try(connection.getInputStream) match {
+    case Success(is) => is
+    case Failure(ex) =>
+      val msg = s"Unable to get InputStream from url connection: $url"
+      logWarning(msg)
+      throw new RyftRestException(msg, ex)
+  }
+
+  def result = {
+    if (connection.getResponseCode == 200) {
+      val in = connection.getInputStream
+      val body = IOUtils.toString(in, "UTF-8")
+      body
+    } else {
+      val errorStream = IOUtils.toString(connection.getErrorStream, "UTF-8")
+      val msg = s"Ryft REST connection failed.\n" +
+        s"URL: ${connection.getURL}\n" +
+        s"Error Code: ${connection.getResponseCode}\n" +
+        s"Error Message: $errorStream"
+      logWarning(msg)
+      throw new RyftRestException(msg)
+    }
+  }
+}
+
+object RyftRestConnection {
+  def apply(url: String, requestProperties: Map[String, String]) =
+    new RyftRestConnection(url, requestProperties)
 }

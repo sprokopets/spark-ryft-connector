@@ -28,8 +28,6 @@
  * ============
  */
 
-package com.ryft.spark.connector.util
+package com.ryft.spark.connector.exception
 
-object UrlEncoder {
-  def encode(s: String) = java.net.URLEncoder.encode(s, "utf-8").replace("+","%20")
-}
+case class RyftRestException(msg: String = null, exc: Throwable = null) extends Exception(msg, exc)

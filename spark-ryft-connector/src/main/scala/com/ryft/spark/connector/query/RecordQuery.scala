@@ -31,9 +31,9 @@
 package com.ryft.spark.connector.query
 
 import com.ryft.spark.connector.domain
-import com.ryft.spark.connector.domain.{RyftQueryOptions, InputSpecifier, RelationalOperator}
+import com.ryft.spark.connector.domain.{InputSpecifier, RelationalOperator}
+import com.ryft.spark.connector.exception.RyftSparkException
 import com.ryft.spark.connector.query.filter._
-import com.ryft.spark.connector.RyftSparkException
 import com.ryft.spark.connector.query.RecordQuery._
 
 import scala.annotation.tailrec

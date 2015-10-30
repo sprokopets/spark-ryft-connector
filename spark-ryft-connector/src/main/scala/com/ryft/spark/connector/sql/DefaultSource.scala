@@ -30,7 +30,7 @@
 
 package com.ryft.spark.connector.sql
 
-import com.ryft.spark.connector.RyftSparkException
+import com.ryft.spark.connector.exception.RyftSparkException
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.{SchemaRelationProvider, BaseRelation, RelationProvider}

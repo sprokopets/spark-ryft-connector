@@ -31,9 +31,10 @@
 package com.ryft.spark.connector
 
 import com.ryft.spark.connector.config.ConfigHolder
-import com.ryft.spark.connector.query.{RecordQuery, RyftQuery, SimpleQuery}
 import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.rdd.{RDDQuery, RyftRDD, RyftPairRDD}
+import com.ryft.spark.connector.exception.RyftSparkException
+import com.ryft.spark.connector.query.{RecordQuery, RyftQuery, SimpleQuery}
+import com.ryft.spark.connector.rdd.{RDDQuery, RyftPairRDD, RyftRDD}
 import com.ryft.spark.connector.util.{RyftQueryHelper, TransformFunctions}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -88,9 +89,9 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
                   preferredLocations: RyftQuery => Seq[String] = _ => Seq.empty[String]) = {
     val rddQueries = createRDDQueries(queries, queryOptions, choosePartitions, preferredLocations)
     queries match {
-      case sq: SimpleQuery =>
+      case (sq: SimpleQuery) :: tail =>
         new RyftPairRDD(sc, rddQueries, queryOptions, TransformFunctions.toRyftData)
-      case rq: RecordQuery =>
+      case (rq: RecordQuery) :: tail =>
         new RyftPairRDD(sc, rddQueries, queryOptions, TransformFunctions.noTransform)
       case _                             =>
         val msg = "Unable to create RyftPairRDD. Unrecognized type of Ryft queries"
@@ -104,7 +105,7 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
       choosePartitions: RyftQuery  => Seq[String],
       preferredLocations: RyftQuery  => Seq[String]): Seq[RDDQuery] = {
     queries.map { query =>
-      val queryString = RyftQueryHelper.queryAsString(query, queryOptions)
+      val queryString = RyftQueryHelper.keyQueryPair(query, queryOptions)
       val ryftPartitions = partitions(sc.getConf, query, choosePartitions)
       RDDQuery(queryString._1, queryString._2, ryftPartitions, preferredLocations(query))
     }

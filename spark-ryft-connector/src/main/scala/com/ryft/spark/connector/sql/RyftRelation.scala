@@ -30,12 +30,12 @@
 
 package com.ryft.spark.connector.sql
 
+import com.ryft.spark.connector.config.ConfigHolder
 import com.ryft.spark.connector.domain.RyftQueryOptions
 import com.ryft.spark.connector.rdd.{RDDQuery, RyftRDD}
-import com.ryft.spark.connector.util.{RyftQueryHelper, RyftUtil, FilterConverter, TransformFunctions}
-import org.apache.spark.Logging
+import com.ryft.spark.connector.util.{RyftQueryHelper, FilterConverter, TransformFunctions}
+import org.apache.spark.{SparkConf, Logging}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
@@ -56,11 +56,11 @@ class RyftRelation(files: List[String],
       if (requiredColumns.isEmpty) currentSchema.fieldNames
       else requiredColumns
 
-    val ryftPartitions = RyftUtil.ryftRestUrls(sqlContext.sparkContext.getConf)
+    val ryftPartitions = ryftRestUrls(sqlContext.sparkContext.getConf)
     val queryOptions = RyftQueryOptions(files, columnsToSelect.toList)
 
     val query = FilterConverter.filtersToRecordQuery(filters)
-    val queryWithKey = RyftQueryHelper.queryAsString(query, queryOptions)
+    val queryWithKey = RyftQueryHelper.keyQueryPair(query, queryOptions)
     val rddQuery = RDDQuery("", queryWithKey._2, ryftPartitions)
     val ryftRDD = new RyftRDD(sqlContext.sparkContext, Seq(rddQuery), queryOptions,
       TransformFunctions.noTransform)
@@ -119,6 +119,14 @@ class RyftRelation(files: List[String],
     val nestedFields = st.fields
     val nestedMap = data(field.name).asInstanceOf[Map[String,Any]]
     dataMapToRow(nestedFields, st, nestedMap, List.empty[Any])
+  }
+
+  private def ryftRestUrls(sparkConf: SparkConf): Seq[String] = {
+    val urlOption = sparkConf.getOption("spark.ryft.rest.url")
+    if (urlOption.nonEmpty) urlOption.get
+      .split(",")
+      .map(url => url.trim)
+    else ConfigHolder.ryftRestUrl.toSeq
   }
 }
 

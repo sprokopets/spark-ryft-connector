@@ -44,6 +44,7 @@ lazy val commonSettings = Seq(
     val msgpackVersion    = "0.7.0-p9"
     val configVersion     = "1.3.0"
     val jodaTimeVersion   = "2.9"
+    val commonsIOVersion  = "1.3.2"
     Seq(
       "com.typesafe.akka"       %  "akka-actor_2.10"              % akkaVersion,
       "org.apache.spark"        %  "spark-core_2.10"              % sparkVersion % "provided",
@@ -58,7 +59,8 @@ lazy val commonSettings = Seq(
       "io.spray"                %  "spray-json_2.10"              % sprayJsonVersion,
       "org.msgpack"             %  "jackson-dataformat-msgpack"   % msgpackVersion,
       "com.typesafe"            %  "config"                       % configVersion,
-      "joda-time"               %  "joda-time"                    % jodaTimeVersion
+      "joda-time"               %  "joda-time"                    % jodaTimeVersion,
+      "org.apache.commons"      %  "commons-io"                   % commonsIOVersion
     )}
 )
 

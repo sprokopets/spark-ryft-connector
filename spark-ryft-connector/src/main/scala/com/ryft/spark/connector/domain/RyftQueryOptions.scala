@@ -44,13 +44,6 @@ case class RyftQueryOptions(files: List[String],
     surrounding: Int,
     fuzziness: Byte,
     fields: List[String]) {
-//  def copyWith(files: List[String] = this.files,
-//      surrounding: Int = this.surrounding,
-//      fuzziness: Byte = this.fuzziness,
-//      fields: List[String] = this.fields,
-//      ryftPartitions: Set[String] = this.ryftPartitions) = {
-//    RyftQueryOptions(files, surrounding, fuzziness, fields, ryftPartitions)
-//  }
 }
 
 object RyftQueryOptions {

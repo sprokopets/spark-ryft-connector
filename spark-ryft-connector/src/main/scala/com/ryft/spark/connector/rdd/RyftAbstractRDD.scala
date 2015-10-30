@@ -36,6 +36,7 @@ import _root_.spray.json.JsNumber
 import _root_.spray.json.JsObject
 import _root_.spray.json.JsString
 import com.ryft.spark.connector.domain.RyftQueryOptions
+import com.ryft.spark.connector.rest.RyftRestConnection
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.{TaskContext, Partition, SparkContext}
 import org.apache.spark.rdd.RDD
@@ -43,6 +44,7 @@ import spray.json._
 import DefaultJsonProtocol._
 
 import scala.reflect.ClassTag
+import scala.util.Try
 
 /**
  * RDD representing of a RyftQuery.
@@ -56,6 +58,23 @@ abstract class RyftAbstractRDD [T: ClassTag, R](@transient sc: SparkContext,
 
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T]
+
+  override def count(): Long = {
+    Try(ryftCount()).getOrElse{
+      logInfo("Ryft Rest count endpoint failed. Using default spark count function")
+      super.count()
+    }
+  }
+
+  private def ryftCount(): Long = {
+    getPartitions.map { p =>
+      //FIXME: need not to do replacing in existing query string
+      //insted of this, have to create more configurable query
+      val query = p.asInstanceOf[RyftRDDPartition].query
+        .replace("/search?", "/count?")
+      new RyftRestConnection(query).result.trim.toLong
+    }.sum
+  }
 
   override protected def getPartitions: Array[Partition] = {
     val partitioner = new RyftRDDPartitioner
