@@ -30,6 +30,4 @@
 
 package com.ryft.spark.connector
 
-case class RyftSparkException(msg: String)
-  extends RuntimeException(msg) {
-}
+case class RyftSparkException(msg: String) extends RuntimeException(msg)

@@ -31,14 +31,15 @@
 package com.ryft.spark.connector.sql
 
 import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.rdd.RyftRDD
-import com.ryft.spark.connector.util.{RyftUtil, FilterConverter, TransformFunctions}
+import com.ryft.spark.connector.rdd.{RDDQuery, RyftRDD}
+import com.ryft.spark.connector.util.{RyftQueryHelper, RyftUtil, FilterConverter, TransformFunctions}
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.types._
+import org.joda.time.DateTime
 
 import scala.annotation.tailrec
 
@@ -56,10 +57,12 @@ class RyftRelation(files: List[String],
       else requiredColumns
 
     val ryftPartitions = RyftUtil.ryftRestUrls(sqlContext.sparkContext.getConf)
-    val queryOptions = RyftQueryOptions(files, columnsToSelect.toList, ryftPartitions)
+    val queryOptions = RyftQueryOptions(files, columnsToSelect.toList)
 
     val query = FilterConverter.filtersToRecordQuery(filters)
-    val ryftRDD = new RyftRDD(sqlContext.sparkContext, query, queryOptions,
+    val queryWithKey = RyftQueryHelper.queryAsString(query, queryOptions)
+    val rddQuery = RDDQuery("", queryWithKey._2, ryftPartitions)
+    val ryftRDD = new RyftRDD(sqlContext.sparkContext, Seq(rddQuery), queryOptions,
       TransformFunctions.noTransform)
 
     //need fields for mapping in the same order as in schema
@@ -67,12 +70,13 @@ class RyftRelation(files: List[String],
     currentSchema = StructType(fieldsToMap)
 
     if (ryftRDD.isEmpty()) sqlContext.sparkContext.emptyRDD[Row]
-    else ryftRDD.map(dataMapToRow(fieldsToMap, _))
+    else ryftRDD.map(dataMapToRow(fieldsToMap, currentSchema, _))
   }
 
   //Converts Map with data according to the provided schema into Row
   @tailrec
   private def dataMapToRow(fields: Array[StructField],
+      currentSchema: StructType,
       data: Map[String,Any],
       acc: List[Any] = List.empty[Any]): Row = {
     if (fields.isEmpty) Row.fromSeq(acc.reverse)
@@ -83,18 +87,38 @@ class RyftRelation(files: List[String],
           val nestedFields = st.fields
           val nestedMap = data(field.name).asInstanceOf[Map[String,Any]]
           val nestedValue = nestedMapToRow(st, data, field)
-          dataMapToRow(nestedFields, nestedMap, nestedValue :: acc)
+          dataMapToRow(nestedFields, st, nestedMap, nestedValue :: acc)
         case _ =>
-          val value = data.getOrElse(field.name, "")
-          dataMapToRow(fields.tail, data, value :: acc)
+          val value = readValue(currentSchema, field.name, data(field.name))
+          dataMapToRow(fields.tail, currentSchema, data, value :: acc)
       }
+    }
+  }
+
+  private def readValue(currentSchema: StructType, field: String, dataAny: Any) = {
+    val data = dataAny.toString
+    val elem = currentSchema(field)
+    elem.dataType match {
+      case StringType   => data
+      case BooleanType  => data.toBoolean
+      case IntegerType  => data.toInt
+      case LongType     => data.toLong
+      case ShortType    => data.toShort
+      case DoubleType   => data.toDouble
+      case FloatType    => data.toFloat
+      case ByteType     => data.toByte
+      case DateType     => DateTime.parse(data)
+      case _ =>
+        logWarning(s"Unable to recognize element type: ${elem.dataType}." +
+          s"Will return as a string")
+        data
     }
   }
 
   private def nestedMapToRow(st: StructType, data: Map[String,Any], field: StructField) = {
     val nestedFields = st.fields
     val nestedMap = data(field.name).asInstanceOf[Map[String,Any]]
-    dataMapToRow(nestedFields, nestedMap, List.empty[Any])
+    dataMapToRow(nestedFields, st, nestedMap, List.empty[Any])
   }
 }
 

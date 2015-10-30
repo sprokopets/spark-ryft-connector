@@ -36,8 +36,6 @@ import _root_.spray.json.JsNumber
 import _root_.spray.json.JsObject
 import _root_.spray.json.JsString
 import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.query.RyftQuery
-import com.ryft.spark.connector.util.RyftQueryHelper
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.{TaskContext, Partition, SparkContext}
 import org.apache.spark.rdd.RDD
@@ -52,13 +50,9 @@ import scala.reflect.ClassTag
  * This class is the main entry point for analyzing data using Ryft with Spark.
  */
 abstract class RyftAbstractRDD [T: ClassTag, R](@transient sc: SparkContext,
-    val ryftQuery: RyftQuery,
+    val rddQueries: Seq[RDDQuery],
     val queryOptions: RyftQueryOptions)
   extends RDD[T](sc, Nil) {
-
-  protected val queryS = RyftQueryHelper.queryAsString(ryftQuery, queryOptions)
-  protected val rddQueries = queryOptions.ryftPartitions
-    .map(ryftPartition => RDDQuery(ryftPartition + queryS._2))
 
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T]
@@ -108,9 +102,14 @@ case class RyftRDDPartition(idx: Int,
  * Simple `RyftRDD` partitioner to prepare partitions
  */
 class RyftRDDPartitioner {
-  def partitions(rddQueries: Set[RDDQuery]): Array[Partition] = {
-    (for((query,i) <- rddQueries.zipWithIndex) yield {
-      new RyftRDDPartition(i, query.key, query.query, query.preferredLocation)
-    }).toArray[Partition]
+  def partitions(rddQueries: Seq[RDDQuery]): Array[Partition] = {
+    var index = 0
+    (for (rddQuery <- rddQueries) yield {
+      (for (query <- rddQuery.ryftRestQueries) yield {
+        val partition = new RyftRDDPartition(index, rddQuery.key, query, rddQuery.preferredLocations)
+        index += 1
+        partition
+      }).toArray[Partition]
+    }).flatten.toArray[Partition]
   }
 }

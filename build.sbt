@@ -28,7 +28,7 @@
 
 import sbt.Keys._
 
-version := "0.2.0"
+version := "0.3.0"
 
 lazy val commonSettings = Seq(
   organization        := "com.ryft",
@@ -43,6 +43,7 @@ lazy val commonSettings = Seq(
     val sprayJsonVersion  = "1.3.2"
     val msgpackVersion    = "0.7.0-p9"
     val configVersion     = "1.3.0"
+    val jodaTimeVersion   = "2.9"
     Seq(
       "com.typesafe.akka"       %  "akka-actor_2.10"              % akkaVersion,
       "org.apache.spark"        %  "spark-core_2.10"              % sparkVersion % "provided",
@@ -56,7 +57,8 @@ lazy val commonSettings = Seq(
       "org.twitter4j"           %  "twitter4j-stream"             % twitter4jVersion,
       "io.spray"                %  "spray-json_2.10"              % sprayJsonVersion,
       "org.msgpack"             %  "jackson-dataformat-msgpack"   % msgpackVersion,
-      "com.typesafe"            %   "config"                      % configVersion
+      "com.typesafe"            %  "config"                       % configVersion,
+      "joda-time"               %  "joda-time"                    % jodaTimeVersion
     )}
 )
 
@@ -118,5 +120,7 @@ lazy val examples = (project in file("examples")).
   settings(
     name                := "examples"
   ).dependsOn(sparkRyftConnector,sparkRyftConnectorJava)
+
+
 
 assemblyJarName in assembly := s"spark-ryft-connector_2.10-${version.value}.jar"

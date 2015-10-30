@@ -30,16 +30,23 @@
 
 package com.ryft.spark.connector.query
 
-
 import com.ryft.spark.connector.domain
-import com.ryft.spark.connector.domain.{InputSpecifier, RelationalOperator}
+import com.ryft.spark.connector.domain.{RyftQueryOptions, InputSpecifier, RelationalOperator}
 import com.ryft.spark.connector.query.filter._
 import com.ryft.spark.connector.RyftSparkException
 import com.ryft.spark.connector.query.RecordQuery._
 
 import scala.annotation.tailrec
 
-case class RecordQuery(filters: List[Filter]) extends RyftQuery{
+/**
+ * Represents Ryft query to structured data
+ * @param filters Sequence of filters satisfying Ryft query
+ *                Filters will be applied all all together:
+ *                [Filter0 AND Filter1 AND ... AND FilterN]
+ */
+case class RecordQuery(filters: List[Filter])
+  extends RyftQuery {
+
   def and(is: InputSpecifier, ro: RelationalOperator, value: String) = {
     RecordQuery(toFilter(is, ro, value) :: filters)
   }
@@ -65,10 +72,10 @@ object RecordQuery {
   }
 
   private def toFilter(is: InputSpecifier, ro: RelationalOperator, value: String) = ro match {
-    case domain.contains => Contains(is.value, value)
+    case domain.contains    => Contains(is.value, value)
     case domain.notContains => NotContains(is.value, value)
-    case domain.equalTo => EqualTo(is.value, value)
-    case domain.notEqualTo => NotEqualTo(is.value, value)
+    case domain.equalTo     => EqualTo(is.value, value)
+    case domain.notEqualTo  => NotEqualTo(is.value, value)
     case _ => throw new RyftSparkException(s"Unknown Relational Operator: $ro")
   }
 

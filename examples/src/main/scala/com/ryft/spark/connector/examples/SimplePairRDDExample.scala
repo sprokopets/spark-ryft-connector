@@ -51,8 +51,8 @@ object SimplePairRDDExample extends App with Logging {
 
   val query = SimpleQuery(List("october","april"))
 
-  val metaInfo = RyftQueryOptions("reddit/*", 10, 0 toByte)
-  val ryftRDD = sc.ryftPairRDD(query,metaInfo, RyftPartitioner.byFirstLetter)
+  val ryftQueryOptions = RyftQueryOptions("reddit/*", 10, 0 toByte)
+  val ryftRDD = sc.ryftPairRDD(Seq(query), ryftQueryOptions, RyftPartitioner.byFirstLetter)
 
   val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
   logInfo("count: \n"+count.mkString("\n"))

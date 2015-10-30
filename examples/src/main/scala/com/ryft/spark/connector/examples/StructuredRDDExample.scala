@@ -50,8 +50,7 @@ object StructuredRDDExample extends App with Logging {
       .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
 
   val ryftOptions = RyftQueryOptions("*.pcrime")
-  val ryftRDD = sc.ryftRDD(query,ryftOptions, RyftPartitioner.byFirstLetter,
-    preferredNode)
+  val ryftRDD = sc.ryftRDD(Seq(query),ryftOptions, RyftPartitioner.byFirstLetter)
 
   val countByDescription = ryftRDD.asInstanceOf[RyftRDD[Map[String, String]]]
     .map(m => {
@@ -62,13 +61,13 @@ object StructuredRDDExample extends App with Logging {
     println("key: "+key.get+" count: "+count)
   })
 
-  def preferredNode(preferredPartition: String): Set[String] = {
+  def preferredNode(preferredPartition: String): Seq[String] = {
     preferredPartition match {
-      case "http://52.20.99.136:9000" => Set("172.16.92.4","172.16.92.5")
-      case "http://52.20.99.136:8765" => Set("172.16.92.6","172.16.92.7")
+      case "http://52.20.99.136:9000" => Seq("172.16.92.4","172.16.92.5")
+      case "http://52.20.99.136:8765" => Seq("172.16.92.6","172.16.92.7")
       case _ =>
         logDebug("Unable to find preferred spark node")
-        Set.empty[String]
+        Seq.empty[String]
     }
   }
 }

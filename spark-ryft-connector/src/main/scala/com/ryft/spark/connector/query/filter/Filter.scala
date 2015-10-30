@@ -33,22 +33,40 @@ package com.ryft.spark.connector.query.filter
 abstract class Filter
 
 /**
- * A filter that evaluates to `true` iff the attribute evaluates to a value
+ * A filter that evaluates to `true` if the attribute evaluates to a value
  * equal to `value`.
  */
 case class EqualTo(attribute: String, value: String) extends Filter
+
+/**
+ * A filter that evaluates to `true` if the attribute evaluates to a value
+ * not equal to `value`.
+ */
 case class NotEqualTo(attribute: String, value: String) extends Filter
+
+/**
+ * A filter that evaluates to `true` if the attribute evaluates to a value
+ * contains `value`.
+ */
 case class Contains(attribute: String, value: String) extends Filter
+
+/**
+ * A filter that evaluates to `true` if the attribute evaluates to a value
+ * not contains `value`.
+ */
 case class NotContains(attribute: String, value: String) extends Filter
 
 /**
- * A filter that evaluates to `true` iff both `left` or `right` evaluate to `true`.
+ * A filter that evaluates to `true` if both `left` or `right` evaluate to `true`.
  */
 case class And(left: Filter, right: Filter) extends Filter
 
 /**
- * A filter that evaluates to `true` iff at least one of `left` or `right` evaluates to `true`.
+ * A filter that evaluates to `true` if at least one of `left` or `right` evaluates to `true`.
  */
 case class Or(left: Filter, right: Filter) extends Filter
 
+/**
+ * A filter that evaluates to `true` only if one of `left` or `right` evaluates to `true`.
+ */
 case class Xor(left: Filter, right: Filter) extends Filter

@@ -35,12 +35,11 @@ import org.apache.spark.SparkConf
 
 //TODO: Some common place, need to rethink util package
 object RyftUtil {
-  def ryftRestUrls(sparkConf: SparkConf): Set[String] = {
+  def ryftRestUrls(sparkConf: SparkConf): Seq[String] = {
     val urlOption = sparkConf.getOption("spark.ryft.rest.url")
     if (urlOption.nonEmpty) urlOption.get
       .split(",")
       .map(url => url.trim)
-      .toSet
-    else ConfigHolder.ryftRestUrl.toSet
+    else ConfigHolder.ryftRestUrl.toSeq
   }
 }

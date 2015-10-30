@@ -31,25 +31,30 @@
 package com.ryft.spark.connector.rdd
 
 import com.ryft.spark.connector.RyftSparkException
+import com.ryft.spark.connector.domain.RyftQueryOptions
+import com.ryft.spark.connector.query.RyftQuery
 import org.apache.spark.Logging
 
 /**
  * Represents entity to specify query to Ryft Rest service
  * and set of spark nodes preferred to use for this query.
  *
- * @param key Key for the query
  * @param query Query to Ryft Rest service
- * @param preferredLocation Set of preferred spark nodes
+ * @param preferredLocations Set of preferred spark nodes
  */
-case class RDDQuery(key: String, query: String, preferredLocation: Seq[String])
+case class RDDQuery(key: String,
+    query: String,
+    ryftPartitions: Seq[String] = Seq.empty[String],
+    preferredLocations: Seq[String] = Seq.empty[String]) {
+
+  lazy val ryftRestQueries = ryftPartitions.map(_ + query)
+}
 
 object RDDQuery extends Logging {
-  def apply(query: String) = {
+  def apply(query: String, ryftPartitions: Seq[String], preferredLocation: Seq[String]) = {
     val ryftQuery = subStringBefore(subStringAfter(query, "query="), "&files")
-    new RDDQuery(ryftQuery, query, Seq.empty[String])
+    new RDDQuery(ryftQuery, query, ryftPartitions, preferredLocation)
   }
-
-  def apply(key: String, query: String) = new RDDQuery(key, query, Seq.empty[String])
 
   private def subStringAfter(s:String, k:String) = {
     s.indexOf(k) match {

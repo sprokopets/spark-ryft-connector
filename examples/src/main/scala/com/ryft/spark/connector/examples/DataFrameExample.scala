@@ -65,9 +65,10 @@ object DataFrameExample extends App {
   sqlContext.read.ryft(schema, "*.pcrime", "temp_table")
 
   val df = sqlContext.sql(
-    """select Date, ID, Description, _index from temp_table
+    """select Date, ID, Description, Arrest from temp_table
        where Description LIKE '%VEHICLE%'
           AND (Date LIKE '%04/15/2015%' OR Date LIKE '%04/14/2015%' OR Date LIKE '%04/13/2015%')
+          AND Arrest = true
        ORDER BY Date
     """)
     .collect()

@@ -68,18 +68,20 @@ public class SparkContextJavaFunctions {
                                             RyftQueryOptions queryOptions,
                                             Function1<RyftQuery, Set<String>> choosePartitions,
                                             Function1<String, Set<String>> preferredLocations) {
-        final RyftRDD ryftRDD = (RyftRDD) sparkContextFunctions.ryftRDD(ryftQuery,
-                queryOptions, choosePartitions, preferredLocations);
-        return toJavaRDD(ryftRDD, RyftData.class);
+        throw new UnsupportedOperationException("Should be reimplemented");
+//        final RyftRDD ryftRDD = (RyftRDD) sparkContextFunctions.ryftRDD(ryftQuery,
+//                queryOptions, choosePartitions, preferredLocations);
+//        return toJavaRDD(ryftRDD, RyftData.class);
     }
 
     public RyftJavaRDD ryftRDDStructured(RecordQuery ryftQuery,
                                          RyftQueryOptions queryOptions,
                                          Function1<RyftQuery, Set<String>> choosePartitions,
                                          Function1<String, Set<String>> preferredLocations) {
-        final RyftRDD ryftRDD = (RyftRDD) sparkContextFunctions.ryftRDD(ryftQuery,
-                queryOptions, choosePartitions, preferredLocations);
-        return toJavaRDD(ryftRDD, HashMap.HashTrieMap.class);
+        throw new UnsupportedOperationException("Should be reimplemented");
+//        final RyftRDD ryftRDD = (RyftRDD) sparkContextFunctions.ryftRDD(ryftQuery,
+//                queryOptions, choosePartitions, preferredLocations);
+//        return toJavaRDD(ryftRDD, HashMap.HashTrieMap.class);
     }
 
     public <T> RyftPairJavaRDD<Tuple2<String, T>> toJavaRDD(RyftPairRDD<T> rdd, Class<T> targetClass) {
@@ -91,8 +93,9 @@ public class SparkContextJavaFunctions {
                                                                   RyftQueryOptions queryOptions,
                                                                   Function1<RyftQuery, Set<String>> choosePartitions,
                                                                   Function1<String, Set<String>> preferredLocations) {
-        final RyftPairRDD ryftPairRDD = (RyftPairRDD) sparkContextFunctions.ryftPairRDD(ryftQuery,
-                queryOptions, choosePartitions, preferredLocations);
-        return toJavaRDD(ryftPairRDD, RyftData.class);
+        throw new UnsupportedOperationException("Should be reimplemented");
+//        final RyftPairRDD ryftPairRDD = (RyftPairRDD) sparkContextFunctions.ryftPairRDD(ryftQuery,
+//                queryOptions, choosePartitions, preferredLocations);
+//        return toJavaRDD(ryftPairRDD, RyftData.class);
     }
 }

@@ -43,43 +43,38 @@ import scala.language.postfixOps
 case class RyftQueryOptions(files: List[String],
     surrounding: Int,
     fuzziness: Byte,
-    fields: List[String],
-    ryftPartitions: Set[String]) {
-  def copyWith(files: List[String] = this.files,
-      surrounding: Int = this.surrounding,
-      fuzziness: Byte = this.fuzziness,
-      fields: List[String] = this.fields,
-      ryftPartitions: Set[String] = this.ryftPartitions) = {
-    RyftQueryOptions(files, surrounding, fuzziness, fields, ryftPartitions)
-  }
+    fields: List[String]) {
+//  def copyWith(files: List[String] = this.files,
+//      surrounding: Int = this.surrounding,
+//      fuzziness: Byte = this.fuzziness,
+//      fields: List[String] = this.fields,
+//      ryftPartitions: Set[String] = this.ryftPartitions) = {
+//    RyftQueryOptions(files, surrounding, fuzziness, fields, ryftPartitions)
+//  }
 }
 
 object RyftQueryOptions {
   def apply(file: String) = {
-    new RyftQueryOptions(List(file), 0, 0 toByte, Nil, Set.empty)
+    new RyftQueryOptions(List(file), 0, 0 toByte, Nil)
   }
 
   def apply(files: List[String]) = {
-    new RyftQueryOptions(files, 0, 0 toByte, Nil, Set.empty)
+    new RyftQueryOptions(files, 0, 0 toByte, Nil)
   }
 
   def apply(file: String, surrounding: Int, fuzziness: Byte) = {
-    new RyftQueryOptions(List(file), surrounding, fuzziness, Nil, Set.empty)
+    new RyftQueryOptions(List(file), surrounding, fuzziness, Nil)
   }
 
   def apply(files: List[String], surrounding: Int, fuzziness: Byte) = {
-    new RyftQueryOptions(files, surrounding, fuzziness, Nil, Set.empty)
+    new RyftQueryOptions(files, surrounding, fuzziness, Nil)
   }
 
   def apply(file: String, fields: List[String]) = {
-    new RyftQueryOptions(List(file), 0, 0 toByte, fields, Set.empty)
+    new RyftQueryOptions(List(file), 0, 0 toByte, fields)
   }
 
   def apply(files: List[String], fields: List[String]) = {
-    new RyftQueryOptions(files, 0, 0 toByte, fields, Set.empty)
-  }
-
-  def apply(files: List[String], fields: List[String], ryftPartitions: Set[String]) = {
-    new RyftQueryOptions(files, 0, 0 toByte, fields, ryftPartitions)
+    new RyftQueryOptions(files, 0, 0 toByte, fields)
   }
 }

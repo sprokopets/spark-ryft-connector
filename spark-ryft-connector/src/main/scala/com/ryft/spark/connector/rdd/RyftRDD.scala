@@ -38,10 +38,10 @@ import org.apache.spark.annotation.DeveloperApi
 import scala.reflect.ClassTag
 
 class RyftRDD[T: ClassTag](@transient sc: SparkContext,
-     override val ryftQuery: RyftQuery,
+     override val rddQueries: Seq[RDDQuery],
      override val queryOptions: RyftQueryOptions,
      val transform: Map[String, Any] => T)
-  extends RyftAbstractRDD[T, T](sc, ryftQuery, queryOptions) {
+  extends RyftAbstractRDD[T, T](sc, rddQueries, queryOptions) {
 
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
