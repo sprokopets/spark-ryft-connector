@@ -121,12 +121,12 @@ class RyftRelation(files: List[String],
     dataMapToRow(nestedFields, st, nestedMap, List.empty[Any])
   }
 
-  private def ryftRestUrls(sparkConf: SparkConf): Seq[String] = {
+  private def ryftRestUrls(sparkConf: SparkConf): Set[String] = {
     val urlOption = sparkConf.getOption("spark.ryft.rest.url")
     if (urlOption.nonEmpty) urlOption.get
       .split(",")
-      .map(url => url.trim)
-    else ConfigHolder.ryftRestUrl.toSeq
+      .map(url => url.trim).toSet
+    else ConfigHolder.ryftRestUrl.toSet
   }
 }
 

@@ -28,49 +28,54 @@
  * ============
  */
 
-package com.ryft.spark.connector.rdd
+package com.ryft.spark.connector
 
-import com.ryft.spark.connector.exception.RyftSparkException
-import org.apache.spark.Logging
+import com.ryft.spark.connector.domain.{contains, record}
+import com.ryft.spark.connector.query.RecordQuery
+import com.ryft.spark.connector.util.RyftPartitioner
+import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.Assert._
 
-/**
- * Represents entity to specify query to Ryft Rest service
- * and set of spark nodes preferred to use for this query.
- *
- * @param query Query to Ryft Rest service
- * @param preferredLocations Set of preferred spark nodes
- */
-case class RDDQuery(key: String,
-    query: String,
-    ryftPartitions: Set[String] = Set.empty[String],
-    preferredLocations: Set[String] = Set.empty[String]) {
+class PartitioningSuite extends JUnitSuite {
+  private val A2M_PARTITION = "http://52.20.99.136:8765"
+  private val N2Z_DIGITS_PARTITION = "http://52.20.99.136:9000"
 
-  lazy val ryftRestQueries = ryftPartitions.map(_ + query)
-}
-
-object RDDQuery extends Logging {
-  def apply(query: String, ryftPartitions: Set[String], preferredLocation: Set[String]) = {
-    val ryftQuery = subStringBefore(subStringAfter(query, "query="), "&files")
-    new RDDQuery(ryftQuery, query, ryftPartitions, preferredLocation)
+  @Test def n2zRecordQuery() = {
+    val query = RecordQuery(record, contains, "VEHICLE")
+    val partitions = RyftPartitioner.forRyftQuery(query, RyftPartitioner.byFirstLetter)
+    assertNotNull(partitions)
+    assert(partitions.size == 1)
+    assertEquals(N2Z_DIGITS_PARTITION, partitions.head)
   }
 
-  private def subStringAfter(s:String, k:String) = {
-    s.indexOf(k) match {
-      case i => s.substring(i+k.length)
-      case _ =>
-        val msg = s"$k Does not exist in string: $s"
-        logWarning(msg)
-        throw new RyftSparkException(msg)
-    }
+  @Test def a2mRecordQuery() = {
+    val query = RecordQuery(record, contains, "BIKE")
+    val partitions = RyftPartitioner.forRyftQuery(query, RyftPartitioner.byFirstLetter)
+    assertNotNull(partitions)
+    assert(partitions.size == 1)
+    assertEquals(A2M_PARTITION, partitions.head)
   }
 
-  private def subStringBefore(s: String, k: String) = {
-    s.indexOf(k) match {
-      case i => s.substring(0, i)
-      case _ =>
-        val msg = s"$k Does not exist in string: $s"
-        logWarning(msg)
-        throw new RyftSparkException(msg)
-    }
+  @Test def digitsRecordQuery() = {
+    val query = RecordQuery(record, contains, "2 VEHICLES")
+    val partitions = RyftPartitioner.forRyftQuery(query, RyftPartitioner.byFirstLetter)
+    assertNotNull(partitions)
+    assert(partitions.size == 1)
+    assertEquals(N2Z_DIGITS_PARTITION, partitions.head)
+  }
+
+  @Test def complexRecordQuery() = {
+    val query =
+      RecordQuery(
+        RecordQuery(record, contains, "VEHICLE")
+          .and(record, contains, "BIKE"))
+      .or(record, contains, "2 CARS")
+
+    val partitions = RyftPartitioner.forRyftQuery(query, RyftPartitioner.byFirstLetter)
+    assertNotNull(partitions)
+    assert(partitions.size == 2)
+    assert(partitions.contains(A2M_PARTITION))
+    assert(partitions.contains(N2Z_DIGITS_PARTITION))
   }
 }

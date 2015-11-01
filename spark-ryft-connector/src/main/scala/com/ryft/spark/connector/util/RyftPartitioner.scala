@@ -31,11 +31,12 @@
 package com.ryft.spark.connector.util
 
 import com.ryft.spark.connector.config.ConfigHolder
+import com.ryft.spark.connector.exception.RyftSparkException
 import com.ryft.spark.connector.query._
+import com.ryft.spark.connector.query.filter._
 import org.apache.spark.Logging
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 import scala.reflect.runtime.universe._
 
 /**
@@ -47,136 +48,30 @@ object RyftPartitioner extends Logging {
    * Chooses partitions using function passed for partitioning
    *
    * @param ryftQuery Ryft query
-   * @param partitions Function to choose partition
+   * @param partFunc Function to choose partition
    * @return Set of partitions required for given query
    */
   def forRyftQuery(ryftQuery: RyftQuery,
-      partitions: String => Set[String] = _ => Set.empty[String]):
-  Set[String] = ???
-//  {
-//    ryftQuery match {
-//      case sq: SimpleQuery => sq.queries.flatMap(q => partitions(q)).toSet
-//      case rq: RecordQuery => choosePartitions(rq.queries, mutable.Set.empty[String], partitions)
-//      case _ =>
-//        val msg = "Unable to find partitions for RyftQuery. " +
-//          "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
-//        logWarning(msg)
-//        throw new RyftSparkException(msg)
-//    }
-//  }
-
-//  /**
-//   * Chooses partitions for Single query
-//   *
-//   * @param ryftQuery Search query
-//   * @return Set of partitions for query
-//   */
-//  def forSingleQuery(
-//    ryftQuery: RyftQuery,
-//    partitions: SingleQuery => Set[String]):
-//  Set[String] = ???
-//  {
-//    ryftQuery match {
-//      case sq: SingleQuery => partitions(sq)
-//      case rq: RecordQuery => forSingleQuery(rq.queries, partitions, mutable.Set.empty[String])
-//      case _ =>
-//        val msg = "Unable to find partitions for RyftQuery. " +
-//          "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
-//        logWarning(msg)
-//        throw new RyftSparkException(msg)
-//    }
-//  }
+      partFunc: String => List[String] = _ => List.empty[String]):
+  Set[String] = {
+    ryftQuery match {
+      case sq: SimpleQuery => sq.queries.flatMap(q => partFunc(q)).toSet
+      case rq: RecordQuery => forFilters(rq.filters, partFunc, Nil)
+      case _ =>
+        val msg = "Unable to find partitions for RyftQuery. " +
+          "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
+        logWarning(msg)
+        throw new RyftSparkException(msg)
+    }
+  }
 
   /**
    * Chooses partitions according to first letter of the query
-   * @param ryftQuery Search query
+   * @param query Search query
    * @return Set of partitions for query
    */
-  def byFirstLetter(ryftQuery: RyftQuery) = ???
-//  {
-//    ryftQuery match {
-//      case sq: SimpleQuery => sq.queries.flatMap(q => partitionsByFirstLetter(q)).toSet
-//      case rq: RecordQuery => choosePartitions(rq.queries, mutable.Set.empty[String],
-//        partitionsByFirstLetter)
-//      case _ =>
-//        val msg = "Unable to find partitions for RyftQuery. " +
-//          "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
-//        logWarning(msg)
-//        throw new RyftSparkException(msg)
-//    }
-//  }
-
-//  @tailrec
-//  private def forSingleQuery(
-//    queries: List[GenericQuery],
-//    partitions: SingleQuery => Set[String],
-//    acc: mutable.Set[String]):
-//  Set[String] = {
-//    if (queries.isEmpty) acc.toSet
-//    else {
-//      queries.head match {
-//        case sq: SingleQuery =>
-//          acc ++= partitions(sq)
-//          forSingleQuery(queries.tail, partitions, acc)
-//
-//        case rq: RecordQuery =>
-//          acc ++= recordQueryForSingleQuery(rq, partitions)
-//          forSingleQuery(queries.tail, partitions, acc)
-//
-//        case _ =>
-//          val msg = "Unable to choose partitions. " +
-//            "Unexpected Ryft Query Type: " + typeOf[GenericQuery]
-//          logWarning(msg)
-//          throw new RyftSparkException("Unexpected Ryft Query Type")
-//      }
-//    }
-//  }
-
-//  private def recordQueryForSingleQuery(
-//     rq: RecordQuery,
-//     partitions: SingleQuery => Set[String]):
-//  Set[String] = ???
-//  {
-//    forSingleQuery(rq.queries, partitions, mutable.Set.empty[String])
-//  }
-
-//  @tailrec
-//  private def choosePartitions(
-//    queries: List[GenericQuery],
-//    acc: mutable.Set[String],
-//    partitions: String => Set[String]):
-//  Set[String] = {
-//
-//    if (queries.isEmpty) acc.toSet
-//    else {
-//      queries.head match {
-//        case sq: SingleQuery =>
-//          acc ++= partitions(sq.query)
-//          choosePartitions(queries.tail, acc, partitions)
-//
-//        case rq: RecordQuery =>
-//          acc ++= recordQueryPartitions(rq, partitions)
-//          choosePartitions(queries.tail, acc, partitions)
-//
-//        case _ =>
-//          val msg = "Unable to choose partitions. " +
-//            "Unexpected Ryft Query Type: " + typeOf[GenericQuery]
-//          logWarning(msg)
-//          throw new RyftSparkException("Unexpected Ryft Query Type")
-//      }
-//    }
-//  }
-
-//  private def recordQueryPartitions(
-//    rq: RecordQuery,
-//    partitions: String => Set[String]):
-//  Set[String] = ???
-//  {
-//    choosePartitions(rq.queries, mutable.Set.empty[String], partitions)
-//  }
-
-  private def partitionsByFirstLetter(query: String): Set[String] = {
-    ConfigHolder.partitions.filter({
+  def byFirstLetter(query: String): List[String] = {
+    ConfigHolder.partitions.filter {
       case(url, pattern) => pattern.isEmpty || {
         val Pattern = pattern.r.unanchored
         query match {
@@ -184,6 +79,28 @@ object RyftPartitioner extends Logging {
           case _          => false
         }
       }
-    }).keySet
+    }.keys.toList
+  }
+
+  @tailrec
+  private def forFilters(filters: List[Filter],
+      partFunc: String => List[String],
+      acc: List[String] = Nil): Set[String] = {
+    if (filters.isEmpty) acc.toSet
+    else forFilters(filters.tail, partFunc, partitions(filters.head :: Nil, partFunc, Nil) ::: acc)
+  }
+
+  @tailrec
+  private def partitions(f: List[Filter],
+      partFunc: String => List[String],
+      acc: List[String]): List[String] = f match {
+    case EqualTo(attr, value) :: tail => partitions(tail, partFunc, partFunc(value) ::: acc)
+    case Contains(attr, value) :: tail => partitions(tail, partFunc, partFunc(value) ::: acc)
+    case NotEqualTo(attr, value) :: tail => partitions(tail, partFunc, partFunc(value) ::: acc)
+    case NotContains(attr, value) :: tail => partitions(tail, partFunc, partFunc(value) ::: acc)
+    case And(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc)
+    case Or(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc)
+    case Xor(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc)
+    case _ => acc
   }
 }
