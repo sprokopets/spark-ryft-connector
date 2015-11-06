@@ -47,7 +47,7 @@ abstract class NextIterator[T,R](split: Partition, transform: Map[String, Any] =
   extends Iterator[R] with Logging {
 
   private val partition = split.asInstanceOf[RyftRDDPartition]
-  logDebug(s"Compute partition, idx: ${partition.idx}")
+  logInfo(s"Compute partition, idx: ${partition.idx}")
 
   val requestProperties = Map("Accept" -> "application/msgpack", "Transfer-Encoding" -> "chunked")
 
@@ -63,7 +63,7 @@ abstract class NextIterator[T,R](split: Partition, transform: Map[String, Any] =
         accumulator = json.asInstanceOf[Map[String,String]]
         true
       case _ =>
-        logDebug(s"Iterator processing ended for partition with idx: ${partition.idx}")
+        logInfo(s"Iterator processing ended for partition with idx: ${partition.idx}")
         is.close()
         false
     }
