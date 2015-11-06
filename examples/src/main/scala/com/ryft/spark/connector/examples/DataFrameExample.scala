@@ -38,7 +38,7 @@ import com.ryft.spark.connector._
 object DataFrameExample extends App {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
-    .setMaster("local[2]")
+    .setMaster("local[2]").set("spark.jars", "path_to_your_jar")
 
   val sc = new SparkContext(sparkConf)
   val sqlContext = new SQLContext(sc)
@@ -46,7 +46,7 @@ object DataFrameExample extends App {
   //TODO: try to find out schema from first Row
   val schema = StructType(Seq(
     StructField("Arrest", BooleanType), StructField("Beat", IntegerType),
-    StructField("Block", StringType), StructField("CaseNumber", IntegerType),
+    StructField("Block", StringType), StructField("CaseNumber", StringType),
     StructField("CommunityArea", IntegerType), StructField("Date", StringType),
     StructField("Description", StringType), StructField("District", IntegerType),
     StructField("Domestic", BooleanType), StructField("FBICode", IntegerType),
