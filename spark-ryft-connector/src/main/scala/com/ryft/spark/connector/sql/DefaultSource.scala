@@ -52,3 +52,4 @@ class DefaultSource extends SchemaRelationProvider with Logging {
     new RyftRelation(files, schema)(sqlContext)
   }
 }
+

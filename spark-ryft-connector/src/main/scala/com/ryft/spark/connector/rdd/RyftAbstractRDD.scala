@@ -79,8 +79,8 @@ abstract class RyftAbstractRDD [T: ClassTag, R](@transient sc: SparkContext,
   override protected def getPartitions: Array[Partition] = {
     val partitioner = new RyftRDDPartitioner
     val partitions = partitioner.partitions(rddQueries)
-    logInfo(s"Created total ${partitions.length} partitions.")
-    logInfo("Partitions: \n" + partitions.mkString("\n"))
+    logDebug(s"Created total ${partitions.length} partitions.")
+    logDebug("Partitions: \n" + partitions.mkString("\n"))
     partitions
   }
 
