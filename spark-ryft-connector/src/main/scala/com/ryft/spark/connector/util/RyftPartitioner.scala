@@ -52,11 +52,12 @@ object RyftPartitioner extends Logging {
    * @return Set of partitions required for given query
    */
   def forRyftQuery(ryftQuery: RyftQuery,
-      partFunc: String => List[String] = _ => List.empty[String]):
+      partFunc: String => List[String] = _ => List.empty[String],
+      recordFields: Seq[String] = Seq.empty[String]):
   Set[String] = {
     ryftQuery match {
       case sq: SimpleQuery => sq.queries.flatMap(q => partFunc(q)).toSet
-      case rq: RecordQuery => forFilters(rq.filters, partFunc, Nil)
+      case rq: RecordQuery => forFilters(rq.filters, partFunc, Nil, recordFields.map("RECORD." + _))
       case _ =>
         val msg = "Unable to find partitions for RyftQuery. " +
           "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
@@ -85,22 +86,49 @@ object RyftPartitioner extends Logging {
   @tailrec
   private def forFilters(filters: List[Filter],
       partFunc: String => List[String],
-      acc: List[String] = Nil): Set[String] = {
+      acc: List[String] = Nil,
+      recordFields: Seq[String]): Set[String] = {
     if (filters.isEmpty) acc.toSet
-    else forFilters(filters.tail, partFunc, partitions(filters.head :: Nil, partFunc, Nil) ::: acc)
+    else {
+      val preferredPartitions = partitions(filters.head :: Nil, partFunc, Nil, recordFields)
+      forFilters(filters.tail, partFunc, preferredPartitions ::: acc, recordFields)
+    }
   }
 
   @tailrec
   private def partitions(f: List[Filter],
       partFunc: String => List[String],
-      acc: List[String]): List[String] = f match {
-    case EqualTo(attr, value) :: tail => partitions(tail, partFunc, partFunc(value) ::: acc)
-    case Contains(attr, value) :: tail => partitions(tail, partFunc, partFunc(value) ::: acc)
-    case NotEqualTo(attr, value) :: tail => partitions(tail, partFunc, partFunc(value) ::: acc)
-    case NotContains(attr, value) :: tail => partitions(tail, partFunc, partFunc(value) ::: acc)
-    case And(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc)
-    case Or(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc)
-    case Xor(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc)
+      acc: List[String],
+      recordFields: Seq[String] ): List[String] = f match {
+    case EqualTo(attr, value) :: tail =>
+      val ps = partitionsByRecordFields(attr, value, partFunc, recordFields)
+      partitions(tail, partFunc,  ps ::: acc, recordFields)
+
+    case Contains(attr, value) :: tail => val ps =
+      partitionsByRecordFields(attr, value, partFunc, recordFields)
+      partitions(tail, partFunc,  ps ::: acc, recordFields)
+
+    case NotEqualTo(attr, value) :: tail =>
+      val ps = partitionsByRecordFields(attr, value, partFunc, recordFields)
+      partitions(tail, partFunc,  ps ::: acc, recordFields)
+
+    case NotContains(attr, value) :: tail =>
+      val ps = partitionsByRecordFields(attr, value, partFunc, recordFields)
+      partitions(tail, partFunc,  ps ::: acc, recordFields)
+
+    case And(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc, recordFields)
+    case Or(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc, recordFields)
+    case Xor(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc, recordFields)
     case _ => acc
+  }
+
+  private def partitionsByRecordFields(attr: String,
+      value: String,
+      partFunc: String => List[String],
+      recordFields: Seq[String]): List[String] = {
+
+    if (recordFields.isEmpty) partFunc(value)
+    else if (recordFields.contains(attr)) partFunc(value)
+    else Nil
   }
 }

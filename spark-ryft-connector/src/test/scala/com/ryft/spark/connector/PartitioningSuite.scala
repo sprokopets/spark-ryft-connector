@@ -30,7 +30,7 @@
 
 package com.ryft.spark.connector
 
-import com.ryft.spark.connector.domain.{contains, record}
+import com.ryft.spark.connector.domain.{recordField, contains, record}
 import com.ryft.spark.connector.query.RecordQuery
 import com.ryft.spark.connector.util.RyftPartitioner
 import org.junit.Test
@@ -73,6 +73,33 @@ class PartitioningSuite extends JUnitSuite {
       .or(record, contains, "2 CARS")
 
     val partitions = RyftPartitioner.forRyftQuery(query, RyftPartitioner.byFirstLetter)
+    assertNotNull(partitions)
+    assert(partitions.size == 2)
+    assert(partitions.contains(A2M_PARTITION))
+    assert(partitions.contains(N2Z_DIGITS_PARTITION))
+  }
+
+  @Test def complexRecordFieldQuery() = {
+    val query =
+      RecordQuery(
+        RecordQuery(recordField("field0"), contains, "VEHICLE")
+          .and(recordField("field1"), contains, "BIKE"))
+        .or(recordField("field2"), contains, "2 CARS")
+
+    val partitions = RyftPartitioner.forRyftQuery(query, RyftPartitioner.byFirstLetter, Seq("field1"))
+    assertNotNull(partitions)
+    assert(partitions.size == 1)
+    assert(partitions.contains(A2M_PARTITION))
+  }
+
+  @Test def complexRecordFieldsQuery() = {
+    val query =
+      RecordQuery(
+        RecordQuery(recordField("field0"), contains, "VEHICLE")
+          .and(recordField("field1"), contains, "BIKE"))
+        .or(recordField("field2"), contains, "2 CARS")
+
+    val partitions = RyftPartitioner.forRyftQuery(query, RyftPartitioner.byFirstLetter, Seq("field0", "field1"))
     assertNotNull(partitions)
     assert(partitions.size == 2)
     assert(partitions.contains(A2M_PARTITION))
