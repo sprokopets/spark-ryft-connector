@@ -74,4 +74,4 @@ df = sqlContext.sql("select Date, ID, Description, Arrest from temp_table\
           AND (Date LIKE '%04/15/2015%' OR Date LIKE '%04/14/2015%' OR Date LIKE '%04/13/2015%')\
           AND Arrest = true\
        ORDER BY Date").first()
-print("Resutl: \n" + str(df))
+df.show(truncate=False)
