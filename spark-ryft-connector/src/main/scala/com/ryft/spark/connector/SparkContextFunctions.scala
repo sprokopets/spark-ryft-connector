@@ -57,7 +57,7 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
    */
   def ryftRDD(queries: Seq[RyftQuery],
               queryOptions: RyftQueryOptions,
-              choosePartitions: String => List[String] = _ => List.empty[String],
+              choosePartitions: RyftQuery => List[String] = _ => List.empty[String],
               preferredLocations: RyftQuery => Set[String] = _ => Set.empty[String]) = {
     val rddQueries = createRDDQueries(queries, queryOptions, choosePartitions, preferredLocations)
     queries match {
@@ -85,7 +85,7 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
    */
   def ryftPairRDD(queries: Seq[RyftQuery],
                   queryOptions: RyftQueryOptions,
-                  choosePartitions: String => List[String] = _ => List.empty[String],
+                  choosePartitions: RyftQuery => List[String] = _ => List.empty[String],
                   preferredLocations: RyftQuery => Set[String] = _ => Set.empty[String]) = {
     val rddQueries = createRDDQueries(queries, queryOptions, choosePartitions, preferredLocations)
     queries match {
@@ -102,7 +102,7 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
 
   private def createRDDQueries(queries: Seq[RyftQuery],
       queryOptions: RyftQueryOptions,
-      choosePartitions: String  => List[String],
+      choosePartitions: RyftQuery  => List[String],
       preferredLocations: RyftQuery  => Set[String]): Seq[RDDQuery] = {
     queries.map { query =>
       val queryString = RyftQueryHelper.keyQueryPair(query, queryOptions)
@@ -112,7 +112,7 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
   }
 
   private def partitions(sparkConf: SparkConf, ryftQuery: RyftQuery,
-                         choosePartitions: String => List[String]): Set[String] = {
+      choosePartitions: RyftQuery => List[String]): Set[String] = {
     val urlOption = sparkConf.getOption("spark.ryft.rest.url")
     val restUrls =
       if (urlOption.nonEmpty) urlOption.get
@@ -121,9 +121,9 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Logging {
         .toSet
       else ConfigHolder.ryftRestUrl.toSet
 
-    val partitions = RyftPartitioner.forRyftQuery(ryftQuery, choosePartitions)
+    val partitions = choosePartitions(ryftQuery)
 
-    if (partitions.nonEmpty) partitions
+    if (partitions.nonEmpty) partitions.toSet
     else restUrls
   }
 }

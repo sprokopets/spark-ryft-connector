@@ -28,6 +28,7 @@
  * ============
  */
 
+
 package com.ryft.spark.connector.util
 
 import com.ryft.spark.connector.config.ConfigHolder
@@ -44,26 +45,24 @@ import scala.reflect.runtime.universe._
  */
 object RyftPartitioner extends Logging {
 
-  /**
-   * Chooses partitions using function passed for partitioning
-   *
-   * @param ryftQuery Ryft query
-   * @param partFunc Function to choose partition
-   * @return Set of partitions required for given query
-   */
-  def forRyftQuery(ryftQuery: RyftQuery,
-      partFunc: String => List[String] = _ => List.empty[String],
-      recordFields: Seq[String] = Seq.empty[String]):
-  Set[String] = {
-    ryftQuery match {
-      case sq: SimpleQuery => sq.queries.flatMap(q => partFunc(q)).toSet
-      case rq: RecordQuery => forFilters(rq.filters, partFunc, Nil, recordFields.map("RECORD." + _))
-      case _ =>
-        val msg = "Unable to find partitions for RyftQuery. " +
-          "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
-        logWarning(msg)
-        throw new RyftSparkException(msg)
-    }
+  def byField(query: RyftQuery,
+      partFunc: String => List[String],
+      fields: Seq[String]): List[String] = query match {
+    case rq: RecordQuery => forFilters(rq.filters, partFunc, fields)
+    case _ =>
+      val msg = "Unable to find partitions for RyftQuery. " +
+        "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
+      logWarning(msg)
+      throw new RyftSparkException(msg)
+  }
+
+  def forSimpleQuery(query: RyftQuery, partFunc: String => List[String]) = query match {
+    case sq: SimpleQuery => sq.queries.flatMap(byFirstLetter)
+    case _ =>
+      val msg = "Unable to find partitions for RyftQuery. " +
+        "Unrecognized RyftQuery subtype: " + typeOf[RyftQuery]
+      logWarning(msg)
+      throw new RyftSparkException(msg)
   }
 
   /**
@@ -73,11 +72,11 @@ object RyftPartitioner extends Logging {
    */
   def byFirstLetter(query: String): List[String] = {
     ConfigHolder.partitions.filter {
-      case(url, pattern) => pattern.isEmpty || {
+      case (url, pattern) => pattern.isEmpty || {
         val Pattern = pattern.r.unanchored
         query match {
           case Pattern(_) => true
-          case _          => false
+          case _ => false
         }
       }
     }.keys.toList
@@ -86,49 +85,42 @@ object RyftPartitioner extends Logging {
   @tailrec
   private def forFilters(filters: List[Filter],
       partFunc: String => List[String],
-      acc: List[String] = Nil,
-      recordFields: Seq[String]): Set[String] = {
-    if (filters.isEmpty) acc.toSet
+      fields: Seq[String],
+      acc: List[String] = Nil): List[String] = {
+    if (filters.isEmpty) acc
     else {
-      val preferredPartitions = partitions(filters.head :: Nil, partFunc, Nil, recordFields)
-      forFilters(filters.tail, partFunc, preferredPartitions ::: acc, recordFields)
+      val preferredPartitions = partitions(filters.head :: Nil, partFunc, fields, Nil)
+      forFilters(filters.tail, partFunc, fields, preferredPartitions ::: acc)
     }
   }
 
   @tailrec
   private def partitions(f: List[Filter],
-      partFunc: String => List[String],
-      acc: List[String],
-      recordFields: Seq[String] ): List[String] = f match {
+                         partFunc: String => List[String],
+                         fields: Seq[String],
+                         acc: List[String]): List[String] = f match {
     case EqualTo(attr, value) :: tail =>
-      val ps = partitionsByRecordFields(attr, value, partFunc, recordFields)
-      partitions(tail, partFunc,  ps ::: acc, recordFields)
-
-    case Contains(attr, value) :: tail => val ps =
-      partitionsByRecordFields(attr, value, partFunc, recordFields)
-      partitions(tail, partFunc,  ps ::: acc, recordFields)
-
+      val preferredPartitions = applyPartitioning(attr, value, partFunc, fields)
+      partitions(tail, partFunc, fields, preferredPartitions ::: acc)
+    case Contains(attr, value) :: tail =>
+      val preferredPartitions = applyPartitioning(attr, value, partFunc, fields)
+      partitions(tail, partFunc, fields, preferredPartitions ::: acc)
     case NotEqualTo(attr, value) :: tail =>
-      val ps = partitionsByRecordFields(attr, value, partFunc, recordFields)
-      partitions(tail, partFunc,  ps ::: acc, recordFields)
-
+      val preferredPartitions = applyPartitioning(attr, value, partFunc, fields)
+      partitions(tail, partFunc, fields, preferredPartitions ::: acc)
     case NotContains(attr, value) :: tail =>
-      val ps = partitionsByRecordFields(attr, value, partFunc, recordFields)
-      partitions(tail, partFunc,  ps ::: acc, recordFields)
-
-    case And(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc, recordFields)
-    case Or(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc, recordFields)
-    case Xor(left, right) :: tail => partitions(left :: right :: tail, partFunc, acc, recordFields)
+      val preferredPartitions = applyPartitioning(attr, value, partFunc, fields)
+      partitions(tail, partFunc, fields, preferredPartitions ::: acc)
+    case And(left, right) :: tail => partitions(left :: right :: tail, partFunc, fields, acc)
+    case Or(left, right) :: tail => partitions(left :: right :: tail, partFunc, fields, acc)
+    case Xor(left, right) :: tail => partitions(left :: right :: tail, partFunc, fields, acc)
     case _ => acc
   }
 
-  private def partitionsByRecordFields(attr: String,
-      value: String,
-      partFunc: String => List[String],
-      recordFields: Seq[String]): List[String] = {
-
-    if (recordFields.isEmpty) partFunc(value)
-    else if (recordFields.contains(attr)) partFunc(value)
-    else Nil
+  private def applyPartitioning(attr: String, value: String, partFunc: String => List[String],
+      fields: Seq[String]): List[String] = {
+    if (fields.isEmpty) partFunc(value)
+    else if (!fields.contains(attr.split("RECORD.")(1))) Nil
+    else partFunc(value)
   }
 }

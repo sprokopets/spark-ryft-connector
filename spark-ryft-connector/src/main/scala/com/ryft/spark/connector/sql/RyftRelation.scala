@@ -61,7 +61,7 @@ class RyftRelation(files: List[String],
 
     val query = FilterConverter.filtersToRecordQuery(filters)
     val queryWithKey = RyftQueryHelper.keyQueryPair(query, queryOptions)
-    val rddQuery = RDDQuery("", queryWithKey._2, ryftPartitions)
+    val rddQuery = RDDQuery(queryWithKey._1, queryWithKey._2, ryftPartitions)
     val ryftRDD = new RyftRDD(sqlContext.sparkContext, Seq(rddQuery), queryOptions,
       TransformFunctions.noTransform)
 

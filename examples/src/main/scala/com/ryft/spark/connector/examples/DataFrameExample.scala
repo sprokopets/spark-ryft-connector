@@ -38,7 +38,7 @@ import com.ryft.spark.connector._
 object DataFrameExample extends App {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
-    .setMaster("local[2]").set("spark.jars", "path_to_your_jar")
+    .setMaster("local[2]")
 
   val sc = new SparkContext(sparkConf)
   val sqlContext = new SQLContext(sc)
@@ -72,5 +72,4 @@ object DataFrameExample extends App {
        ORDER BY Date
     """)
     .collect()
-  println()
 }

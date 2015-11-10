@@ -50,7 +50,7 @@ object StructuredRDDExample extends App with Logging {
       .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
 
   val ryftOptions = RyftQueryOptions("*.pcrime")
-  val ryftRDD = sc.ryftRDD(Seq(query),ryftOptions, RyftPartitioner.byFirstLetter)
+  val ryftRDD = sc.ryftRDD(Seq(query),ryftOptions)
 
   val countByDescription = ryftRDD.asInstanceOf[RyftRDD[Map[String, String]]]
     .map(m => {
