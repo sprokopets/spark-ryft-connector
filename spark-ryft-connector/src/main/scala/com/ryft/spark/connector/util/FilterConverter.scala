@@ -30,13 +30,15 @@
 
 package com.ryft.spark.connector.util
 
+import com.ryft.spark.connector.exception.RyftSparkException
 import com.ryft.spark.connector.query._
 import com.ryft.spark.connector.query.RecordQuery
+import org.apache.spark.Logging
 import org.apache.spark.sql.sources._
 
 import scala.annotation.tailrec
 
-object FilterConverter {
+object FilterConverter extends Logging {
   @tailrec
   def filtersToRecordQuery(filters: Array[Filter],
       acc: RecordQuery = RecordQuery()): RecordQuery = {
@@ -58,8 +60,9 @@ object FilterConverter {
     case Or(left, right) => filter.Or(toRyftFilter(left), toRyftFilter(right))
     case And(left, right) => filter.And(toRyftFilter(left), toRyftFilter(right))
     case _ =>
-      println("error: "+ f)
-      throw new RuntimeException //TODO: exception + message
+      val msg = s"Filter not supported by Ryft: $f"
+      logWarning(msg)
+      throw new RyftSparkException(msg)
   }
 
   private def not(f: Filter): filter.Filter = f match {
@@ -68,7 +71,8 @@ object FilterConverter {
     case StringStartsWith(attr, v) => filter.NotContains("RECORD."+attr, v)
     case StringEndsWith(attr, v) => filter.NotContains("RECORD."+attr, v)
     case _ =>
-      println("error: "+ f)
-      throw new RuntimeException //TODO: exception + message
+      val msg = s"Filter not supported by Ryft: $f"
+      logWarning(msg)
+      throw new RyftSparkException(msg)
   }
 }

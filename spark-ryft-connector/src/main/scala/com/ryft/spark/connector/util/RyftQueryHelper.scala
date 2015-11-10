@@ -94,7 +94,6 @@ private [connector] object RyftQueryHelper extends Logging {
   }
 
   private def filterToString(f: Filter): String = f match {
-      //TODO: implement NOT
     case EqualTo(attr, v) => s"""($attr EQUALS "$v")"""
     case NotEqualTo(attr, v) => s"""($attr NOT_EQUALS "$v")"""
     case Contains(attr, v) => s"""($attr CONTAINS "$v")"""
@@ -123,8 +122,9 @@ private [connector] object RyftQueryHelper extends Logging {
       s"$leftResult$AND$rightResult"
 
     case _ =>
-      println("error: "+ f)
-      throw new RuntimeException //TODO: exception + message
+      val msg = s"Unable to process filter: $f"
+      logWarning(msg)
+      throw new RyftSparkException(msg)
   }
 
   private def isOneLayerTree(f: Filter) = f match {
