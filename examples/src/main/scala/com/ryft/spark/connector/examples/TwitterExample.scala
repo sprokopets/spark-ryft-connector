@@ -83,6 +83,7 @@ object TwitterExample extends App with Logging {
     val candidates = rdd.collect().toList
     val simpleQueries = candidates.map(SimpleQuery(_))
     val ryftRDD = sc.ryftPairRDD(simpleQueries, queryOptions)
+    if (ryftRDD.count() > 0 ) logInfo(s"First elem: ${ryftRDD.first()}")
   })
 
   ssc.start()

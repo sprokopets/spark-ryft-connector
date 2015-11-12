@@ -28,36 +28,37 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector.japi;
 
-import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
-import org.apache.spark.{SparkContext, SparkConf}
-import com.ryft.spark.connector._
+import com.ryft.spark.connector.domain.InputSpecifier;
+import com.ryft.spark.connector.domain.RelationalOperator;
+import com.ryft.spark.connector.domain.contains$;
+import com.ryft.spark.connector.domain.recordField;
+import com.ryft.spark.connector.query.RecordQuery;
+import com.ryft.spark.connector.query.RecordQuery$;
+import com.ryft.spark.connector.query.SimpleQuery;
+import com.ryft.spark.connector.query.SimpleQuery$;
 
-import scala.language.postfixOps
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
-object StreamExample extends App {
-  val lines = scala.io.Source.fromURL(args(0)).getLines().toSeq
+public class RyftQueryUtil {
 
-  val sparkConf = new SparkConf()
-    .setAppName("StreamExample")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
+    public static SimpleQuery toSimpleQuery(String query) {
+        return SimpleQuery$.MODULE$.apply(query);
+    }
 
-  val sc = new SparkContext(sparkConf)
-  val r = scala.util.Random
+    public static List<SimpleQuery> toSimpleQueries(String ... queries) {
+        return Arrays.asList(queries)
+                .stream()
+                .map(SimpleQuery$.MODULE$::apply)
+                .collect(Collectors.toList());
+    }
 
-  val metaInfo = RyftQueryOptions("reddit/*", 10, 0 toByte)
-  //FIXME: the same in TwitterExample, but looks like we at all don't need this example
-//  while(true) {
-//    val words = (0 until 5).map(_ => {
-//      lines(r.nextInt(lines.size))
-//    }).toList
-//
-//    val queries = words.map(w => SimpleQuery(List(w)))
-//    val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
-//    val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
-//    println("\n\ncount: "+count.mkString("\n"))
-//    Thread.sleep(10000)
-//  }
+    public static RecordQuery toRecordQuery(InputSpecifier is, RelationalOperator ro, String value) {
+        return RecordQuery$.MODULE$.apply(is, ro, value);
+    }
 }

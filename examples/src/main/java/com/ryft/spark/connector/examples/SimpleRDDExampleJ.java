@@ -28,28 +28,40 @@
  * ============
  */
 
-package com.ryft.spark.connector.util
+package com.ryft.spark.connector.examples;
 
-import com.ryft.spark.connector.query.RyftQuery
+import com.ryft.spark.connector.domain.RyftQueryOptions;
+import com.ryft.spark.connector.japi.RyftJavaUtil;
+import com.ryft.spark.connector.japi.RyftQueryUtil;
+import com.ryft.spark.connector.japi.SparkContextJavaFunctions;
+import com.ryft.spark.connector.japi.rdd.RyftJavaRDD;
+import com.ryft.spark.connector.query.SimpleQuery;
+import com.ryft.spark.connector.query.SimpleQuery$;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
+public class SimpleRDDExampleJ {
+    private static final Logger logger = LoggerFactory.getLogger("SimpleRDDExampleJ");
 
-object JavaApiHelper {
-  /** Returns a `ClassTag` of a given runtime class. */
-  def getClassTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
+    public static void main(String[] args) {
+        final SparkConf sparkConf = new SparkConf()
+                .setAppName("SimpleRDDExampleJ")
+                .setMaster("local[2]")
+                .set("spark.ryft.rest.url", "http://52.20.99.136:9000");
 
-  def toScalaSeq[T](elem: T): Seq[T] = Seq(elem)
+        final SparkContext sc = new SparkContext(sparkConf);
+        final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
+        final byte fuzziness = 0;
+        final int surrounding = 10;
+        final SimpleQuery query = RyftQueryUtil.toSimpleQuery("Jones");
 
-  def toScalaSeq[T](elems: java.util.List[T]): Seq[T] = elems.asScala.toSeq
+        final RyftJavaRDD rdd = javaFunctions.ryftRDD(query,
+                RyftQueryOptions.apply("passengers.txt", surrounding, fuzziness),
+                RyftJavaUtil.ryftQueryToEmptyList,
+                RyftJavaUtil.stringToEmptySet);
 
-  def toScalaList[T](elem: T): List[T] = List(elem)
-
-  def toScalaList[T](elems: java.util.List[T]): List[T] = elems.asScala.toList
-
-  def scalaEmptySet[T] = Set.empty[T]
-
-  def scalaEmptyList[T] = List.empty[T]
-
-  def ryftQueryToEmptySet(ryftQuery: RyftQuery) = Set.empty[String]
+        logger.info("count: {}", rdd.count());
+    }
 }

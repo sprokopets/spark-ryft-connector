@@ -42,12 +42,13 @@ object StructuredRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
     .setMaster("local[2]")
+    .set("spark.ryft.rest.url", "http://52.20.99.136:8765")
 
   val sc = new SparkContext(sparkConf)
 
   val query =
-    RecordQuery(recordField("desc"), contains, "VEHICLE")
-      .and(RecordQuery(recordField("date"), contains, "04/15/2015"))
+    RecordQuery(recordField("Description"), contains, "VEHICLE")
+      .and(RecordQuery(recordField("Date"), contains, "04/15/2015"))
 
   val ryftOptions = RyftQueryOptions("*.pcrime")
   val ryftRDD = sc.ryftRDD(Seq(query),ryftOptions)
@@ -60,14 +61,4 @@ object StructuredRDDExample extends App with Logging {
   countByDescription.foreach({case(key, count) =>
     println("key: "+key.get+" count: "+count)
   })
-
-  def preferredNode(preferredPartition: String): Seq[String] = {
-    preferredPartition match {
-      case "http://52.20.99.136:9000" => Seq("172.16.92.4","172.16.92.5")
-      case "http://52.20.99.136:8765" => Seq("172.16.92.6","172.16.92.7")
-      case _ =>
-        logDebug("Unable to find preferred spark node")
-        Seq.empty[String]
-    }
-  }
 }

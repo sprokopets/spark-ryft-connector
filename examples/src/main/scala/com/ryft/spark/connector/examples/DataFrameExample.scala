@@ -32,18 +32,18 @@ package com.ryft.spark.connector.examples
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.types._
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext}
 import com.ryft.spark.connector._
 
-object DataFrameExample extends App {
+object DataFrameExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
     .setMaster("local[2]")
+    .set("spark.ryft.rest.url", "http://52.20.99.136:9000")
 
   val sc = new SparkContext(sparkConf)
   val sqlContext = new SQLContext(sc)
 
-  //TODO: try to find out schema from first Row
   val schema = StructType(Seq(
     StructField("Arrest", BooleanType), StructField("Beat", IntegerType),
     StructField("Block", StringType), StructField("CaseNumber", StringType),
@@ -68,8 +68,9 @@ object DataFrameExample extends App {
     """select Date, ID, Description, Arrest from temp_table
        where Description LIKE '%VEHICLE%'
           AND (Date LIKE '%04/15/2015%' OR Date LIKE '%04/14/2015%' OR Date LIKE '%04/13/2015%')
-          AND Arrest = true
        ORDER BY Date
     """)
     .collect()
+
+  logInfo(s"Result count: ${df.length}")
 }

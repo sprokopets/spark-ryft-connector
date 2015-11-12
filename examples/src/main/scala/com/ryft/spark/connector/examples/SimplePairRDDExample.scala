@@ -31,6 +31,7 @@
 package com.ryft.spark.connector.examples
 
 import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
+import com.ryft.spark.connector.examples.SimpleRDDExample._
 import com.ryft.spark.connector.query.SimpleQuery
 import com.ryft.spark.connector.rdd.RyftPairRDD
 import com.ryft.spark.connector.util.RyftPartitioner
@@ -43,17 +44,15 @@ object SimplePairRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
     .setMaster("local[2]")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
     .set("spark.ryft.rest.url", "http://52.20.99.136:9000")
-    .set("spark.task.maxFailures", "5")
 
   val sc = new SparkContext(sparkConf)
 
-  val query = Seq(SimpleQuery("october"),SimpleQuery("april"))
+  val query = Seq(SimpleQuery("Jones"),SimpleQuery("Thomas"))
 
-  val ryftQueryOptions = RyftQueryOptions("reddit/*", 10, 0 toByte)
-  val ryftRDD = sc.ryftPairRDD(query, ryftQueryOptions)
+  val queryOptions = RyftQueryOptions("passengers.txt", 10, 0 toByte)
+  val ryftRDD = sc.ryftPairRDD(query, queryOptions)
 
-  val count = ryftRDD.count()
+  val result = ryftRDD.countByKey().mkString("\n")
+  logInfo(s"RDD count count by key: \n$result")
 }

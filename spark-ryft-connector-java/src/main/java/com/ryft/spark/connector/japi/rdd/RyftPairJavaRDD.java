@@ -30,13 +30,17 @@
 
 package com.ryft.spark.connector.japi.rdd;
 
+import com.ryft.spark.connector.rdd.RyftPairRDD;
+import com.ryft.spark.connector.util.JavaApiHelper;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.rdd.RDD;
+import scala.Tuple2;
 import scala.reflect.ClassTag;
 
 @SuppressWarnings({"unchecked", "UnusedDeclaration"})
-public class RyftPairJavaRDD<T> extends JavaRDD<T> {
-    public RyftPairJavaRDD(RDD<T> rdd, ClassTag<T> classTag) {
-        super(rdd, classTag);
+public class RyftPairJavaRDD<T> extends JavaPairRDD<String,T> {
+    public RyftPairJavaRDD(RyftPairRDD<T> rdd, ClassTag<T> classTag) {
+        super(rdd, JavaApiHelper.getClassTag(String.class), classTag);
     }
 }
