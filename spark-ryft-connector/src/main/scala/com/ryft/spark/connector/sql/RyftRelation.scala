@@ -30,10 +30,10 @@
 
 package com.ryft.spark.connector.sql
 
-import com.ryft.spark.connector.config.ConfigHolder
 import com.ryft.spark.connector.domain.RyftQueryOptions
+import com.ryft.spark.connector.partitioner.NoPartitioner
 import com.ryft.spark.connector.rdd.{RDDQuery, RyftRDD}
-import com.ryft.spark.connector.util.{RyftQueryHelper, FilterConverter, TransformFunctions}
+import com.ryft.spark.connector.util.{RyftPartitioner, FilterConverter, TransformFunctions}
 import org.apache.spark.{SparkConf, Logging}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
@@ -56,14 +56,23 @@ class RyftRelation(files: List[String],
       if (requiredColumns.isEmpty) currentSchema.fieldNames
       else requiredColumns
 
-    val ryftPartitions = ryftRestUrls(sqlContext.sparkContext.getConf)
+    val ryftQuery = FilterConverter.filtersToRecordQuery(filters)
     val queryOptions = RyftQueryOptions(files, columnsToSelect.toList)
 
-    val query = FilterConverter.filtersToRecordQuery(filters)
-    val queryWithKey = RyftQueryHelper.keyQueryPair(query, queryOptions)
-    val rddQuery = RDDQuery(queryWithKey._1, queryWithKey._2, ryftPartitions)
-    val ryftRDD = new RyftRDD(sqlContext.sparkContext, Seq(rddQuery), queryOptions,
-      TransformFunctions.noTransform)
+    val partitioner =
+      if (sqlContext.getConf("spark.ryft.partitioner", "").nonEmpty) {
+        sqlContext.getConf("spark.ryft.partitioner")
+      } else if (sqlContext.sparkContext.getConf.get("spark.ryft.partitioner", "").nonEmpty) {
+        sqlContext.sparkContext.getConf.get("spark.ryft.partitioner")
+      } else {
+        classOf[NoPartitioner].getCanonicalName
+      }
+
+    val sparkConf = sqlContext.sparkContext.getConf.set("spark.ryft.partitioner", partitioner)
+    val ryftPartitions = RyftPartitioner.partitions(ryftQuery, sparkConf)
+
+    val rddQuery = RDDQuery(ryftQuery, queryOptions, ryftPartitions)
+    val ryftRDD = new RyftRDD(sqlContext.sparkContext, Seq(rddQuery), TransformFunctions.noTransform)
 
     //need fields for mapping in the same order as in schema
     val fieldsToMap = columnsToSelect.map(userProvidedSchema(_))
@@ -121,12 +130,12 @@ class RyftRelation(files: List[String],
     dataMapToRow(nestedFields, st, nestedMap, List.empty[Any])
   }
 
-  private def ryftRestUrls(sparkConf: SparkConf): Set[String] = {
-    val urlOption = sparkConf.getOption("spark.ryft.rest.url")
-    if (urlOption.nonEmpty) urlOption.get
-      .split(",")
-      .map(url => url.trim).toSet
-    else ConfigHolder.ryftRestUrl.toSet
-  }
+//  private def ryftRestUrls(sparkConf: SparkConf): Set[String] = {
+//    val urlOption = sparkConf.getOption("spark.ryft.rest.url")
+//    if (urlOption.nonEmpty) urlOption.get
+//      .split(",")
+//      .map(url => url.trim).toSet
+//    else ConfigHolder.ryftRestUrl.toSet
+//  }
 }
 

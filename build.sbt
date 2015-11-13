@@ -28,7 +28,7 @@
 
 import sbt.Keys._
 
-version := "0.3.1"
+version := "0.4.0"
 
 lazy val commonSettings = Seq(
   organization        := "com.ryft",

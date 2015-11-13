@@ -41,33 +41,34 @@ import scala.language.postfixOps
  * @param fuzziness Specify the fuzzy search distance [0..255]
  */
 case class RyftQueryOptions(files: List[String],
-    surrounding: Int,
-    fuzziness: Byte,
-    fields: List[String]) {
-}
+    surrounding: Option[Int],
+    fuzziness: Option[Byte],
+    fields: Option[List[String]],
+    ryftNodes: Option[Int],
+    structured: Boolean)
 
 object RyftQueryOptions {
-  def apply(file: String) = {
-    new RyftQueryOptions(List(file), 0, 0 toByte, Nil)
-  }
+  def apply(file: String, structured: Boolean) =
+    new RyftQueryOptions(List(file), None, None, None, None, structured)
 
-  def apply(files: List[String]) = {
-    new RyftQueryOptions(files, 0, 0 toByte, Nil)
-  }
+
+  def apply(files: List[String], structured: Boolean) =
+    new RyftQueryOptions(files, None, None, None, None, structured)
+
 
   def apply(file: String, surrounding: Int, fuzziness: Byte) = {
-    new RyftQueryOptions(List(file), surrounding, fuzziness, Nil)
+    new RyftQueryOptions(List(file), Some(surrounding), Some(fuzziness), None, None, false)
   }
 
   def apply(files: List[String], surrounding: Int, fuzziness: Byte) = {
-    new RyftQueryOptions(files, surrounding, fuzziness, Nil)
+    new RyftQueryOptions(files, Some(surrounding), Some(fuzziness), None, None, false)
   }
 
   def apply(file: String, fields: List[String]) = {
-    new RyftQueryOptions(List(file), 0, 0 toByte, fields)
+    new RyftQueryOptions(List(file), None, None, Some(fields), None, true)
   }
 
   def apply(files: List[String], fields: List[String]) = {
-    new RyftQueryOptions(files, 0, 0 toByte, fields)
+    new RyftQueryOptions(files, None, None, Some(fields), None, true)
   }
 }

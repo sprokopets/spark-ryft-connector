@@ -30,8 +30,7 @@
 
 package com.ryft.spark.connector.rdd
 
-import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.query.RyftQuery
+import com.ryft.spark.connector.rest.RyftRestConnection
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.{TaskContext, Partition, SparkContext}
 
@@ -39,19 +38,22 @@ import scala.reflect.ClassTag
 
 class RyftPairRDD[T: ClassTag](@transient sc: SparkContext,
     override val rddQueries: Seq[RDDQuery],
-    override val queryOptions: RyftQueryOptions,
-    val transform: Map[String, Any] => T)
-  extends RyftAbstractRDD[(String,T), T](sc, rddQueries, queryOptions) {
+    val transform: Map[String, Any] => T,
+    @transient preferredLocations: String => Set[String] = _ => Set.empty[String])
+  extends RyftAbstractRDD[(String,T), T](sc, rddQueries, preferredLocations) {
 
   @DeveloperApi override
   def compute(split: Partition, context: TaskContext): Iterator[(String, T)] = {
-    val partition = split.asInstanceOf[RyftRDDPartition]
-    val key = partition.key
+    val partition = split.asInstanceOf[RDDPartition]
+    val ryftRestConnection = new RyftRestConnection(partition.ryftPartition,
+      partition.rddQuery, requestProps)
+
+    val key = partition.rddQuery.ryftQuery.key
     val idx = partition.idx
 
     logDebug(s"Compute partition, idx: ${partition.idx}")
 
-    new NextIterator[T, (String, T)](partition, transform) {
+    new NextIterator[T, (String, T)](partition, ryftRestConnection, transform) {
       logDebug(s"Start processing iterator for partition with idx: $idx")
 
       override def next(): (String, T) = {

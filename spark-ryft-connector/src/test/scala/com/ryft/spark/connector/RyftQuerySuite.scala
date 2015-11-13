@@ -39,7 +39,7 @@ import org.junit.Assert._
 
 class RyftQuerySuite extends JUnitSuite {
 
-  val queryOptions = RyftQueryOptions("*.pcrime")
+  val queryOptions = RyftQueryOptions("*.pcrime", structured = false)
 
   @Test def testSimpleQuery() {
     val query = SimpleQuery("query0")

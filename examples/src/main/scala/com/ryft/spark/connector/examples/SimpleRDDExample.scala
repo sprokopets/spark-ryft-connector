@@ -30,9 +30,8 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
+import com.ryft.spark.connector.domain.RyftQueryOptions
 import com.ryft.spark.connector.query.SimpleQuery
-import com.ryft.spark.connector.rdd.RyftRDD
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 import com.ryft.spark.connector._
 
@@ -49,7 +48,10 @@ object SimpleRDDExample extends App with Logging {
   val query = SimpleQuery("Jones")
   val queryOptions = RyftQueryOptions("passengers.txt", 10, 0 toByte)
 
-  val ryftRDD = sc.ryftRDD(Seq(query), queryOptions)
+  def locations(s: String) = Set("http://172.31.57.165")
+  val ryftRDD = sc.ryftRDD(Seq(query), queryOptions, preferredLocations = locations)
 
   logInfo(s"RDD count: ${ryftRDD.count()}")
+
+
 }

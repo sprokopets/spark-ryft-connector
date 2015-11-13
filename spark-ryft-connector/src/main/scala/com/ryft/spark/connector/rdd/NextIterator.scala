@@ -43,15 +43,14 @@ import org.msgpack.jackson.dataformat.MessagePackFactory
  * and returns true if element exists
  *
  */
-abstract class NextIterator[T,R](split: Partition, transform: Map[String, Any] => T)
+abstract class NextIterator[T,R](partition: RDDPartition,
+    ryftRestConnection: RyftRestConnection,
+    transform: Map[String, Any] => T)
   extends Iterator[R] with Logging {
 
-  private val partition = split.asInstanceOf[RyftRDDPartition]
   logInfo(s"Compute partition, idx: ${partition.idx}")
 
-  val requestProperties = Map("Accept" -> "application/msgpack", "Transfer-Encoding" -> "chunked")
-
-  private val is = RyftRestConnection(partition.query, requestProperties).getInputStream
+  private val is = ryftRestConnection.getInputStream
   private val parser = new MessagePackFactory().createParser(is)
 
   protected var accumulator = Map.empty[String,String]
