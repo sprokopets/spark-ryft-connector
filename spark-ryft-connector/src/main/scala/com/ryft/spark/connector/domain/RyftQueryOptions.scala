@@ -30,6 +30,8 @@
 
 package com.ryft.spark.connector.domain
 
+import scala.language.postfixOps
+
 /**
  * Represents Meta information used for making request to Ryft
  *
@@ -39,9 +41,33 @@ package com.ryft.spark.connector.domain
  * @param fuzziness Specify the fuzzy search distance [0..255]
  */
 case class RyftQueryOptions(files: List[String],
-                            surrounding: Int,
-                            fuzziness: Byte) {
-  def this(file: String,
-           surrounding: Int,
-           fuzziness: Byte) = this(List(file), surrounding, fuzziness)
+    surrounding: Int,
+    fuzziness: Byte,
+    fields: List[String]) {
+}
+
+object RyftQueryOptions {
+  def apply(file: String) = {
+    new RyftQueryOptions(List(file), 0, 0 toByte, Nil)
+  }
+
+  def apply(files: List[String]) = {
+    new RyftQueryOptions(files, 0, 0 toByte, Nil)
+  }
+
+  def apply(file: String, surrounding: Int, fuzziness: Byte) = {
+    new RyftQueryOptions(List(file), surrounding, fuzziness, Nil)
+  }
+
+  def apply(files: List[String], surrounding: Int, fuzziness: Byte) = {
+    new RyftQueryOptions(files, surrounding, fuzziness, Nil)
+  }
+
+  def apply(file: String, fields: List[String]) = {
+    new RyftQueryOptions(List(file), 0, 0 toByte, fields)
+  }
+
+  def apply(files: List[String], fields: List[String]) = {
+    new RyftQueryOptions(files, 0, 0 toByte, fields)
+  }
 }

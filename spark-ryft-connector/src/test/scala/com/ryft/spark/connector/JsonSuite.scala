@@ -34,7 +34,7 @@ import java.io.ByteArrayInputStream
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ryft.spark.connector.util.SimpleJsonParser
-import org.scalatest.FunSuite
+import org.scalatest._
 
 class JsonSuite extends FunSuite {
   val simpleJsonObj =

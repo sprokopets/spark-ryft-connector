@@ -28,8 +28,37 @@
  * ============
  */
 
-package com.ryft.spark.connector
+package com.ryft.spark.connector.japi;
 
-case class RyftSparkException(msg: String)
-  extends RuntimeException(msg) {
+import com.ryft.spark.connector.domain.InputSpecifier;
+import com.ryft.spark.connector.domain.RelationalOperator;
+import com.ryft.spark.connector.domain.contains$;
+import com.ryft.spark.connector.domain.recordField;
+import com.ryft.spark.connector.query.RecordQuery;
+import com.ryft.spark.connector.query.RecordQuery$;
+import com.ryft.spark.connector.query.SimpleQuery;
+import com.ryft.spark.connector.query.SimpleQuery$;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class RyftQueryUtil {
+
+    public static SimpleQuery toSimpleQuery(String query) {
+        return SimpleQuery$.MODULE$.apply(query);
+    }
+
+    public static List<SimpleQuery> toSimpleQueries(String ... queries) {
+        return Arrays.asList(queries)
+                .stream()
+                .map(SimpleQuery$.MODULE$::apply)
+                .collect(Collectors.toList());
+    }
+
+    public static RecordQuery toRecordQuery(InputSpecifier is, RelationalOperator ro, String value) {
+        return RecordQuery$.MODULE$.apply(is, ro, value);
+    }
 }

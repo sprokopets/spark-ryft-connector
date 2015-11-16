@@ -28,28 +28,45 @@
  * ============
  */
 
-package com.ryft.spark.connector.util
+package com.ryft.spark.connector.query.filter
 
-import com.ryft.spark.connector.query.RyftQuery
+abstract class Filter
 
-import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
+/**
+ * A filter that evaluates to `true` if the attribute evaluates to a value
+ * equal to `value`.
+ */
+case class EqualTo(attribute: String, value: String) extends Filter
 
-object JavaApiHelper {
-  /** Returns a `ClassTag` of a given runtime class. */
-  def getClassTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
+/**
+ * A filter that evaluates to `true` if the attribute evaluates to a value
+ * not equal to `value`.
+ */
+case class NotEqualTo(attribute: String, value: String) extends Filter
 
-  def toScalaSeq[T](elem: T): Seq[T] = Seq(elem)
+/**
+ * A filter that evaluates to `true` if the attribute evaluates to a value
+ * contains `value`.
+ */
+case class Contains(attribute: String, value: String) extends Filter
 
-  def toScalaSeq[T](elems: java.util.List[T]): Seq[T] = elems.asScala.toSeq
+/**
+ * A filter that evaluates to `true` if the attribute evaluates to a value
+ * not contains `value`.
+ */
+case class NotContains(attribute: String, value: String) extends Filter
 
-  def toScalaList[T](elem: T): List[T] = List(elem)
+/**
+ * A filter that evaluates to `true` if both `left` or `right` evaluate to `true`.
+ */
+case class And(left: Filter, right: Filter) extends Filter
 
-  def toScalaList[T](elems: java.util.List[T]): List[T] = elems.asScala.toList
+/**
+ * A filter that evaluates to `true` if at least one of `left` or `right` evaluates to `true`.
+ */
+case class Or(left: Filter, right: Filter) extends Filter
 
-  def scalaEmptySet[T] = Set.empty[T]
-
-  def scalaEmptyList[T] = List.empty[T]
-
-  def ryftQueryToEmptySet(ryftQuery: RyftQuery) = Set.empty[String]
-}
+/**
+ * A filter that evaluates to `true` only if one of `left` or `right` evaluates to `true`.
+ */
+case class Xor(left: Filter, right: Filter) extends Filter

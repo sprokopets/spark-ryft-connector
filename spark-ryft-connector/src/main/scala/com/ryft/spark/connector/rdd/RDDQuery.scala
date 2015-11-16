@@ -30,35 +30,47 @@
 
 package com.ryft.spark.connector.rdd
 
-import org.apache.spark.{TaskContext, Partition, SparkContext}
-import org.apache.spark.annotation.DeveloperApi
+import com.ryft.spark.connector.exception.RyftSparkException
+import org.apache.spark.Logging
 
-import scala.reflect.ClassTag
+/**
+ * Represents entity to specify query to Ryft Rest service
+ * and set of spark nodes preferred to use for this query.
+ *
+ * @param query Query to Ryft Rest service
+ * @param preferredLocations Set of preferred spark nodes
+ */
+case class RDDQuery(key: String,
+    query: String,
+    ryftPartitions: Set[String] = Set.empty[String],
+    preferredLocations: Set[String] = Set.empty[String]) {
 
-class RyftRDDSimple[T: ClassTag](@transient sc: SparkContext,
-                                    queries: Iterable[(String,String,Set[String])],
-                                    transform: Map[String, Any] => T)
-  extends RyftRDD[T, T](sc, queries) {
+  lazy val ryftRestQueries = ryftPartitions.map(_ + query)
+}
 
-  @DeveloperApi
-  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
-    val partition = split.asInstanceOf[RyftRDDPartition]
-    val idx = partition.idx
+object RDDQuery extends Logging {
+  def apply(query: String, ryftPartitions: Set[String], preferredLocation: Set[String]) = {
+    val ryftQuery = subStringBefore(subStringAfter(query, "query="), "&files")
+    new RDDQuery(ryftQuery, query, ryftPartitions, preferredLocation)
+  }
 
-    new RyftIterator[T,T](partition, transform) {
-      logDebug(s"Start processing iterator for partition with idx: $idx")
+  private def subStringAfter(s:String, k:String) = {
+    s.indexOf(k) match {
+      case i => s.substring(i+k.length)
+      case _ =>
+        val msg = s"$k Does not exist in string: $s"
+        logWarning(msg)
+        throw new RyftSparkException(msg)
+    }
+  }
 
-      override def next(): T = {
-        if (accumulator.isEmpty) {
-          logWarning("Next element does not exist")
-          throw new RuntimeException("Next element does not exist")
-        }
-
-        val elem = transform(accumulator)
-        accumulator = Map.empty[String, String]
-        elem
-      }
+  private def subStringBefore(s: String, k: String) = {
+    s.indexOf(k) match {
+      case i => s.substring(0, i)
+      case _ =>
+        val msg = s"$k Does not exist in string: $s"
+        logWarning(msg)
+        throw new RyftSparkException(msg)
     }
   }
 }
-

@@ -30,4 +30,4 @@
 
 package com.ryft.spark.connector.query
 
-trait RyftQuery
+abstract class RyftQuery

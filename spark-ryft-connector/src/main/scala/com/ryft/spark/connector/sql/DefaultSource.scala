@@ -28,28 +28,27 @@
  * ============
  */
 
-package com.ryft.spark.connector.util
+package com.ryft.spark.connector.sql
 
-import com.ryft.spark.connector.query.RyftQuery
+import com.ryft.spark.connector.exception.RyftSparkException
+import org.apache.spark.Logging
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.sources.{SchemaRelationProvider, BaseRelation, RelationProvider}
+import org.apache.spark.sql.types.StructType
 
-import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
+class DefaultSource extends SchemaRelationProvider with Logging {
+  override def createRelation(@transient sqlContext: SQLContext,
+      parameters: Map[String, String],
+      schema: StructType): BaseRelation = {
+    val files = parameters.getOrElse("files", {
+      val msg = "Required parameter files was not specified"
+      logWarning(msg)
+      throw new RyftSparkException(msg)
+    }).split(",").toList
 
-object JavaApiHelper {
-  /** Returns a `ClassTag` of a given runtime class. */
-  def getClassTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
-
-  def toScalaSeq[T](elem: T): Seq[T] = Seq(elem)
-
-  def toScalaSeq[T](elems: java.util.List[T]): Seq[T] = elems.asScala.toSeq
-
-  def toScalaList[T](elem: T): List[T] = List(elem)
-
-  def toScalaList[T](elems: java.util.List[T]): List[T] = elems.asScala.toList
-
-  def scalaEmptySet[T] = Set.empty[T]
-
-  def scalaEmptyList[T] = List.empty[T]
-
-  def ryftQueryToEmptySet(ryftQuery: RyftQuery) = Set.empty[String]
+    logInfo(s"Creating Ryft Relation: " +
+      s"\nfiles: ${files.mkString(",")}" +
+      s"\nschema: ${schema.treeString}")
+    new RyftRelation(files, schema)(sqlContext)
+  }
 }

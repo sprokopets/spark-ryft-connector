@@ -31,7 +31,7 @@
 package com.ryft.spark.connector.util
 
 import com.fasterxml.jackson.core.{JsonToken, JsonParser}
-import com.ryft.spark.connector.RyftSparkException
+import com.ryft.spark.connector.exception.RyftSparkException
 import org.apache.spark.Logging
 
 import scala.annotation.tailrec

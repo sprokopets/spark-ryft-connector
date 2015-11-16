@@ -70,6 +70,7 @@ RecordQuery(
 (RECORD.date CONTAINS “04/15/2015”))
 ```
 
+#DataFrame support
 
 #License
 Ryft-Customized BSD License

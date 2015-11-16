@@ -28,35 +28,46 @@
  * ============
  */
 
-package com.ryft.spark.connector.examples
+package com.ryft.spark.connector.rdd
 
-import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
-import com.ryft.spark.connector.query.SimpleQuery
-import com.ryft.spark.connector.rdd.RyftPairRDD
-import org.apache.spark.{SparkContext, SparkConf}
-import com.ryft.spark.connector._
+import com.ryft.spark.connector.rest.RyftRestConnection
+import com.ryft.spark.connector.util.SimpleJsonParser
+import org.apache.spark.{Partition, Logging}
+import org.msgpack.jackson.dataformat.MessagePackFactory
 
-object StreamExample extends App {
-  val lines = scala.io.Source.fromURL(args(0)).getLines().toSeq
+/**
+ * An iterator that allows to iterate through the stream of JSON objects.
+ * Used MessagePackFactory parser by default.
+ *
+ * `hasNext` reads next element from the stream to accumulator
+ * and returns true if element exists
+ *
+ */
+abstract class NextIterator[T,R](split: Partition, transform: Map[String, Any] => T)
+  extends Iterator[R] with Logging {
 
-  val sparkConf = new SparkConf()
-    .setAppName("StreamExample")
-    .set("spark.locality.wait", "120s")
-    .set("spark.locality.wait.node", "120s")
+  private val partition = split.asInstanceOf[RyftRDDPartition]
+  logInfo(s"Compute partition, idx: ${partition.idx}")
 
-  val sc = new SparkContext(sparkConf)
-  val r = scala.util.Random
+  val requestProperties = Map("Accept" -> "application/msgpack", "Transfer-Encoding" -> "chunked")
 
-  val metaInfo = RyftQueryOptions(List("reddit/*"), 10, 0)
-  while(true) {
-    val words = (0 until 5).map(_ => {
-      lines(r.nextInt(lines.size))
-    }).toList
+  private val is = RyftRestConnection(partition.query, requestProperties).getInputStream
+  private val parser = new MessagePackFactory().createParser(is)
 
-    val queries = words.map(w => SimpleQuery(List(w)))
-    val ryftRDD = sc.ryftPairRDD(queries, metaInfo)
-    val count = ryftRDD.asInstanceOf[RyftPairRDD[RyftData]].countByKey()
-    println("\n\ncount: "+count.mkString("\n"))
-    Thread.sleep(10000)
+  protected var accumulator = Map.empty[String,String]
+
+  override def hasNext: Boolean = {
+    val json = SimpleJsonParser.parseJson(parser)
+    json match {
+      case acc: Map[String, String] =>
+        accumulator = json.asInstanceOf[Map[String,String]]
+        true
+      case _ =>
+        logInfo(s"Iterator processing ended for partition with idx: ${partition.idx}")
+        is.close()
+        false
+    }
   }
+
+  override def next(): R
 }

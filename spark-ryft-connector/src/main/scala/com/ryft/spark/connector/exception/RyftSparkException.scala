@@ -28,28 +28,6 @@
  * ============
  */
 
-package com.ryft.spark.connector.util
+package com.ryft.spark.connector.exception
 
-import com.ryft.spark.connector.query.RyftQuery
-
-import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
-
-object JavaApiHelper {
-  /** Returns a `ClassTag` of a given runtime class. */
-  def getClassTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
-
-  def toScalaSeq[T](elem: T): Seq[T] = Seq(elem)
-
-  def toScalaSeq[T](elems: java.util.List[T]): Seq[T] = elems.asScala.toSeq
-
-  def toScalaList[T](elem: T): List[T] = List(elem)
-
-  def toScalaList[T](elems: java.util.List[T]): List[T] = elems.asScala.toList
-
-  def scalaEmptySet[T] = Set.empty[T]
-
-  def scalaEmptyList[T] = List.empty[T]
-
-  def ryftQueryToEmptySet(ryftQuery: RyftQuery) = Set.empty[String]
-}
+case class RyftSparkException(msg: String) extends RuntimeException(msg)

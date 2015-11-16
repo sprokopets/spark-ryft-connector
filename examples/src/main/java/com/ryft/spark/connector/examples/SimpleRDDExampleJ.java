@@ -28,30 +28,40 @@
  * ============
  */
 
-package com.ryft.spark.connector.rdd
+package com.ryft.spark.connector.examples;
 
-import java.net.{HttpURLConnection, URL}
+import com.ryft.spark.connector.domain.RyftQueryOptions;
+import com.ryft.spark.connector.japi.RyftJavaUtil;
+import com.ryft.spark.connector.japi.RyftQueryUtil;
+import com.ryft.spark.connector.japi.SparkContextJavaFunctions;
+import com.ryft.spark.connector.japi.rdd.RyftJavaRDD;
+import com.ryft.spark.connector.query.SimpleQuery;
+import com.ryft.spark.connector.query.SimpleQuery$;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.apache.spark.Logging
+public class SimpleRDDExampleJ {
+    private static final Logger logger = LoggerFactory.getLogger("SimpleRDDExampleJ");
 
-/**
- * Represents simple connection to Ryft Rest service.
- * By default add headers:
- *  Accept: application/msgpack
- *  Transfer-Encoding: chunked
- *
- * @param url Ryft Rest query
- */
-case class RyftRestConnection(url: String) extends Logging {
-  private val connection = new URL(url)
-    .openConnection()
-    .asInstanceOf[HttpURLConnection]
+    public static void main(String[] args) {
+        final SparkConf sparkConf = new SparkConf()
+                .setAppName("SimpleRDDExampleJ")
+                .setMaster("local[2]")
+                .set("spark.ryft.rest.url", "http://52.20.99.136:9000");
 
-  connection.setRequestProperty("Accept", "application/msgpack")
-  connection.setRequestProperty("Transfer-Encoding","chunked")
+        final SparkContext sc = new SparkContext(sparkConf);
+        final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
+        final byte fuzziness = 0;
+        final int surrounding = 10;
+        final SimpleQuery query = RyftQueryUtil.toSimpleQuery("Jones");
 
-  logDebug("Used request header: \nAccept: application/msgpack")
-  logDebug("Used request header: \nTransfer-Encoding: chunked")
+        final RyftJavaRDD rdd = javaFunctions.ryftRDD(query,
+                RyftQueryOptions.apply("passengers.txt", surrounding, fuzziness),
+                RyftJavaUtil.ryftQueryToEmptyList,
+                RyftJavaUtil.stringToEmptySet);
 
-  def getInputStream = connection.getInputStream
+        logger.info("count: {}", rdd.count());
+    }
 }

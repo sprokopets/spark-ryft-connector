@@ -40,8 +40,8 @@ package com.ryft.spark.connector.domain
  * @param data Query with surrounding (if surrounding was specified)
  */
 case class RyftData (file: String,
-                     offset: Int,
-                     length: Int,
+                     offset: Long,
+                     length: Long,
                      fuzziness: Byte,
                      data: String) {
   def this() = this("", 0, 0, 0, "")
