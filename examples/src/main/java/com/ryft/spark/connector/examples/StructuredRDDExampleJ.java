@@ -57,7 +57,6 @@ public class StructuredRDDExampleJ {
         final SparkConf sparkConf = new SparkConf()
             .setAppName("SimplePairRDDExample")
             .setMaster("local[2]")
-            .set("spark.ryft.rest.url", "http://52.20.99.136:8765");
 
         final SparkContext sc = new SparkContext(sparkConf);
         final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);

@@ -41,15 +41,13 @@ object SimpleRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
     .setMaster("local[2]")
-    .set("spark.ryft.rest.url", "http://52.20.99.136:8765")
 
   val sc = new SparkContext(sparkConf)
 
   val query = SimpleQuery("Jones")
   val queryOptions = RyftQueryOptions("passengers.txt", 10, 0 toByte)
 
-  def locations(s: String) = Set("http://172.31.57.165")
-  val ryftRDD = sc.ryftRDD(Seq(query), queryOptions, preferredLocations = locations)
+  val ryftRDD = sc.ryftRDD(Seq(query), queryOptions)
 
   logInfo(s"RDD count: ${ryftRDD.count()}")
 
