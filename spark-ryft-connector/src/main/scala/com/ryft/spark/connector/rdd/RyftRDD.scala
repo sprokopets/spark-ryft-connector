@@ -30,31 +30,34 @@
 
 package com.ryft.spark.connector.rdd
 
-import com.ryft.spark.connector.domain.RyftQueryOptions
-import com.ryft.spark.connector.query.RyftQuery
+import com.ryft.spark.connector.exception.RyftSparkException
+import com.ryft.spark.connector.rest.RyftRestConnection
 import org.apache.spark.{TaskContext, Partition, SparkContext}
 import org.apache.spark.annotation.DeveloperApi
 
 import scala.reflect.ClassTag
 
 class RyftRDD[T: ClassTag](@transient sc: SparkContext,
-     override val rddQueries: Seq[RDDQuery],
-     override val queryOptions: RyftQueryOptions,
-     val transform: Map[String, Any] => T)
-  extends RyftAbstractRDD[T, T](sc, rddQueries, queryOptions) {
+    override val rddQueries: Seq[RDDQuery],
+    val transform: Map[String, Any] => T,
+    @transient preferredLocations: String => Set[String] = _ => Set.empty[String])
+  extends RyftAbstractRDD[T, T](sc, rddQueries, preferredLocations) {
 
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
-    val partition = split.asInstanceOf[RyftRDDPartition]
+    val partition = split.asInstanceOf[RDDPartition]
+    val ryftRestConnection = new RyftRestConnection(partition.ryftPartition,
+      partition.rddQuery, requestProps)
     val idx = partition.idx
+    logDebug(s"Ryft REST request: \n${ryftRestConnection.url}")
 
-    new NextIterator[T,T](partition, transform) {
+    new NextIterator[T,T](partition, ryftRestConnection, transform) {
       logDebug(s"Start processing iterator for partition with idx: $idx")
 
       override def next(): T = {
         if (accumulator.isEmpty) {
           logWarning("Next element does not exist")
-          throw new RuntimeException("Next element does not exist")
+          throw RyftSparkException("Next element does not exist")
         }
 
         val elem = transform(accumulator)

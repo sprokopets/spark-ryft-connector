@@ -30,9 +30,8 @@
 
 package com.ryft.spark.connector.examples
 
-import com.ryft.spark.connector.domain.{RyftData, RyftQueryOptions}
+import com.ryft.spark.connector.domain.RyftQueryOptions
 import com.ryft.spark.connector.query.SimpleQuery
-import com.ryft.spark.connector.rdd.RyftRDD
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 import com.ryft.spark.connector._
 
@@ -42,7 +41,6 @@ object SimpleRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
     .setMaster("local[2]")
-    .set("spark.ryft.rest.url", "http://52.20.99.136:8765")
 
   val sc = new SparkContext(sparkConf)
 
@@ -52,4 +50,6 @@ object SimpleRDDExample extends App with Logging {
   val ryftRDD = sc.ryftRDD(Seq(query), queryOptions)
 
   logInfo(s"RDD count: ${ryftRDD.count()}")
+
+
 }

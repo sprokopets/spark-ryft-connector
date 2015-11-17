@@ -42,15 +42,12 @@ object StructuredRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
     .setMaster("local[2]")
-    .set("spark.ryft.rest.url", "http://52.20.99.136:8765")
 
   val sc = new SparkContext(sparkConf)
 
-  val query =
-    RecordQuery(recordField("Description"), contains, "VEHICLE")
-      .and(RecordQuery(recordField("Date"), contains, "04/15/2015"))
+  val query = RecordQuery(recordField("Description"), contains, "VEHICLE")
 
-  val ryftOptions = RyftQueryOptions("*.pcrime")
+  val ryftOptions = RyftQueryOptions("*.pcrime", structured = true)
   val ryftRDD = sc.ryftRDD(Seq(query),ryftOptions)
 
   val countByDescription = ryftRDD.asInstanceOf[RyftRDD[Map[String, String]]]

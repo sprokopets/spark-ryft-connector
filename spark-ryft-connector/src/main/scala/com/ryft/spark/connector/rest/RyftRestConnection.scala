@@ -33,6 +33,7 @@ package com.ryft.spark.connector.rest
 import java.net.{HttpURLConnection, URL}
 
 import com.ryft.spark.connector.exception.RyftRestException
+import com.ryft.spark.connector.rdd.RDDQuery
 import org.apache.commons.io.IOUtils
 import org.apache.spark.Logging
 
@@ -40,17 +41,35 @@ import scala.util.{Failure, Success, Try}
 
 /**
  * Represents simple connection to Ryft Rest service.
- * By default add headers:
- *  Accept: application/msgpack
- *  Transfer-Encoding: chunked
  *
- * @param url Ryft Rest query
+ * @param ryftURL Ryft Rest url
+ * @param rddQuery Ryft query
+ * @param requestProperties Request properties
  */
-class RyftRestConnection(url: String,
-    requestProperties: Map[String, String] = Map.empty[String,String])
+class RyftRestConnection(ryftURL: URL,
+    rddQuery: RDDQuery,
+    requestProperties: Map[String,String] = Map.empty[String,String])
   extends Logging {
+  
+  lazy val url = {
+    val action = rddQuery.action.endpoint
+    val queryOptions = rddQuery.queryOptions
+    val ryftQuery = encode(rddQuery.ryftQuery.toRyftQuery)
+    val queryParams = new StringBuilder
+    queryParams ++= s"&files=${queryOptions.files.mkString(",")}"
+    queryParams ++= queryOptions.fuzziness.fold("") {f => s"&fuzziness=$f"}
+    queryParams ++= queryOptions.surrounding.fold("") {s => s"&surrounding=$s"}
+    queryParams ++= queryOptions.fields.fold("") {f => s"""&fields=${f.mkString(",")}"""}
+    queryParams ++= queryOptions.ryftNodes.fold("") {n => s"&nodes=$n"}
 
-  private val connection = (Try(new URL(url).openConnection()) match {
+    //FIXME: not generic solution, need to improve for different ryft response formats
+    queryParams ++=  (if (queryOptions.structured) "&format=xml" else "")
+
+    new URL(s"${ryftURL.getProtocol}://${ryftURL.getAuthority}/$action" +
+      s"?query=$ryftQuery$queryParams")
+  }
+
+  private lazy val connection = (Try(url.openConnection) match {
     case Success(urlConnection) => urlConnection
     case Failure(ex) =>
       val msg = s"Unable to open url connection: $url"
@@ -66,16 +85,15 @@ class RyftRestConnection(url: String,
   def getInputStream = Try(connection.getInputStream) match {
     case Success(is) => is
     case Failure(ex) =>
-      val msg = s"Unable to get InputStream from url connection: $url"
+      val msg = s"Unable to get InputStream from url connection: ${connection.getURL}"
       logWarning(msg)
       throw new RyftRestException(msg, ex)
   }
 
-  def result = {
+  def result: String = {
     if (connection.getResponseCode == 200) {
       val in = connection.getInputStream
-      val body = IOUtils.toString(in, "UTF-8")
-      body
+      IOUtils.toString(in, "UTF-8")
     } else {
       val errorStream = IOUtils.toString(connection.getErrorStream, "UTF-8")
       val msg = s"Ryft REST connection failed.\n" +
@@ -86,9 +104,6 @@ class RyftRestConnection(url: String,
       throw new RyftRestException(msg)
     }
   }
-}
 
-object RyftRestConnection {
-  def apply(url: String, requestProperties: Map[String, String]) =
-    new RyftRestConnection(url, requestProperties)
+  private def encode(s: String) = java.net.URLEncoder.encode(s, "utf-8").replace("+","%20")
 }

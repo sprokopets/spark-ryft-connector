@@ -1,78 +1,125 @@
 # Spark Ryft Connector
 
-This library lets you expose Ryft as Spark RDDs
+This library lets you expose Ryft as Spark RDDs or Data Frames by consuming ryft rest api.
 
-# Installation
+## Installation
 ```sh
 sbt clean compile
 ```
 
-# Build executable jar
+## Build executable jar
 ```sh
 sbt clean assembly
 ```
-You can find jar:
-../spark-ryft-connector/target/scala-2.10/
+You can find jar at:
+`../spark-ryft-connector/target/scala-2.10/`
 
-# Ryft Query mechanism
+## Ryft Query mechanism
 
 There are two main types of RyftQuery:
  1. SimpleQuery
  2. RecordQuery
 
-SimpleQuery represents RAW_TEXT search for one or more search queries. For this type of query used only CONTAINS relational operator. For two or more search queries used OR logical operator.
+`SimpleQuery` represents RAW_TEXT search for one or more search queries. For this type of query used only CONTAINS relational operator. For two or more search queries used OR logical operator.
 For example:
-we need to search for 3 SimpleQuery ‘query0’, ‘query1’, ‘query2’
-```sh
+we need to do free text search for 3 words ‘query0’, ‘query1’, ‘query2’
+```scala
 SimpleQuery(List(“query0”,”query1”,”query2”))
 ```
 It will be transformed to:
 
-```sh
+```
 ((RAW_TEXT CONTAINS “query0”)OR(RAW_TEXT CONTAINS ”query1”)OR(RAW_TEXT CONTAINS “query2"))
 ```
-RecordQuery is a bit complex. It allows to use Ryft RECORD and RECORD.field queries. You can use method chaining mechanism to create nested queries.
+`RecordQuery` is a bit complex. It allows to use Ryft RECORD and RECORD.field queries. You can use method chaining mechanism to create nested queries.
 
 For example:
 
-- search for all records where field desc contains ‘VEHICLE’
-
-```sh
+- search for all records where field desc contains `VEHICLE`
+```scala
 RecordQuery(recordField("desc"), contains, "VEHICLE") -> (RECORD.desc CONTAINS “VEHICLE”) 
 ```
-- search for all records which contains ‘VEHICLE’ in any field
 
+- search for all records which contains ‘VEHICLE’ in any field
 ```sh
 RecordQuery(record, contains, "VEHICLE") -> (RECORD CONTAINS “VEHICLE”) 
 ```
 
 RecordQuery allows you to combine two or more queries via method chaining:
-
-```sh
+```scala
 RecordQuery(recordField("desc"), contains, "VEHICLE")
       .or(recordField("desc"), contains, "BIKE")  
-     
-    
+```
+producing the following query:
+```     
 ((RECORD.desc CONTAINS “VEHICLE”)OR(RECORD.desc CONTAINS “BIKE”))
 ```
 
 or even complex nested queries:
 
-```sh
+```scala
 RecordQuery(
       RecordQuery(recordField("desc"), contains, "VEHICLE")
       .or(recordField("desc"), contains, "BIKE")
       .or(recordField("desc"), contains, "MOTO"))
     .and(RecordQuery(recordField("date"), contains, "04/15/2015"))  
-     
-    
+```
+producing following query:     
+```    
 (((RECORD.desc CONTAINS “VEHICLE”)OR(RECORD.desc CONTAINS “BIKE”)OR(RECORD.desc CONTAINS “MOTO”))AND
 (RECORD.date CONTAINS “04/15/2015”))
 ```
 
-#DataFrame support
+## DataFrame support
+Current connector supports registering as data frames in spark sql context so that they can be queried using SparkSQL. All that's need is a data schema described and single line to register list of file to be searched by the query. Here's example in `scala`:
+```scala
+  val schema = StructType(Seq(
+    StructField("Arrest", BooleanType), StructField("CaseNumber", StringType),
+    StructField("Date", StringType), StructField("Description", StringType), 
+    ....
+  ))
+  
+  sqlContext.read.ryft(schema, "*.pcrime", "temp_table")
 
-#License
+  val df = sqlContext.sql(
+    """select Date, Description, Arrest from temp_table
+       where Description LIKE '%VEHICLE%'
+          AND (Date LIKE '%04/15/2015%' OR Date LIKE '%04/14/2015%')
+       ORDER BY Date
+    """)
+```
+
+Same code in `python`:
+```python
+schema = StructType([
+    StructField("Arrest", BooleanType()), StructField("CaseNumber", IntegerType()),
+    StructField("Date", StringType()), StructField("Description", StringType()),
+    ....
+)
+])
+
+df = sqlContext.read.format("com.ryft.spark.connector.sql").schema(schema).option("files", "*.pcrime").load()
+df.registerTempTable("temp_table")
+
+df = sqlContext.sql("select Date, ID, Description, Arrest from temp_table\
+       where Description LIKE '%VEHICLE%'\
+          AND (Date LIKE '%04/15/2015%' OR Date LIKE '%04/14/2015%')\
+          AND Arrest = true\
+       ORDER BY Date")
+```
+
+For more examples in Scala, Java, PySpark an SparkR please look in [examples](examples/src/main) directory.
+
+## Spark Config Options
+The following options can be set via SparkConf, command line options or zeppelin spark interpreter settings:
+- `spark.ryft.rest.url` - semicolon separated list of ryft rest endpoints for search. For example: http://ryftone-1:8765;http://ryftone-2:8765
+- `spark.ryft.nodes` - number of ryft hardware nodes to be used by queries. corresponds to `nodes`  rest api query parameter.
+- `spark.ryft.partitioner` - canonical class name that implements partitioning logic for data partitioning and collocation. See examples below.
+
+## Data Partitioning and locality support
+*TBD...*
+
+##License
 Ryft-Customized BSD License
 Copyright (c) 2015, Ryft Systems, Inc.
 All rights reserved.

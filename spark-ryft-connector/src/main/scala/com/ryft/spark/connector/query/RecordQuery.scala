@@ -35,6 +35,7 @@ import com.ryft.spark.connector.domain.{InputSpecifier, RelationalOperator}
 import com.ryft.spark.connector.exception.RyftSparkException
 import com.ryft.spark.connector.query.filter._
 import com.ryft.spark.connector.query.RecordQuery._
+import com.ryft.spark.connector.util.RyftQueryHelper
 
 import scala.annotation.tailrec
 
@@ -44,9 +45,7 @@ import scala.annotation.tailrec
  *                Filters will be applied all all together:
  *                [Filter0 AND Filter1 AND ... AND FilterN]
  */
-case class RecordQuery(filters: List[Filter])
-  extends RyftQuery {
-
+case class RecordQuery(filters: List[Filter]) extends RyftQuery {
   def and(is: InputSpecifier, ro: RelationalOperator, value: String) = {
     RecordQuery(toFilter(is, ro, value) :: filters)
   }
@@ -59,6 +58,18 @@ case class RecordQuery(filters: List[Filter])
     val filter = toFilter(is, ro, value)
     RecordQuery(Or(filter, filters.head) :: filters.tail)
   }
+
+  override def key: String = {
+    entries.map {case(key, value) => s"$key:$value"}.mkString("-")
+  }
+
+  override def values: Set[String] = entriesAcc(filters,
+    List.empty[(String, String)]).map(e => e._2).toSet
+
+  override def entries: Set[(String, String)] = entriesAcc(filters,
+    List.empty[(String, String)]).toSet
+
+  override def toRyftQuery: String = RyftQueryHelper.queryToString(this)
 }
 
 object RecordQuery {
@@ -76,12 +87,33 @@ object RecordQuery {
     case domain.notContains => NotContains(is.value, value)
     case domain.equalTo     => EqualTo(is.value, value)
     case domain.notEqualTo  => NotEqualTo(is.value, value)
-    case _ => throw new RyftSparkException(s"Unknown Relational Operator: $ro")
+    case _ => throw RyftSparkException(s"Unknown Relational Operator: $ro")
   }
 
   @tailrec
   private def andToTree(filters: List[Filter], acc: Filter): Filter = {
     if (filters.isEmpty) acc
     else andToTree(filters.tail, And(filters.head, acc))
+  }
+
+
+  @tailrec
+  private def entriesAcc(filters: List[Filter],
+      acc: List[(String,String)]): List[(String,String)] = {
+    if (filters.isEmpty) acc
+    else entriesAcc(filters.tail, forFilter(filters.head :: Nil, acc))
+  }
+
+  @tailrec
+  private def forFilter(f: List[Filter],
+      acc: List[(String,String)]): List[(String,String)] = f match {
+    case EqualTo(attr, value) :: tail => forFilter(tail, (attr.split("RECORD.")(1), value) :: acc)
+    case Contains(attr, value) :: tail => forFilter(tail, (attr.split("RECORD.")(1), value) :: acc)
+    case NotEqualTo(attr, value) :: tail => forFilter(tail, (attr.split("RECORD.")(1), value) :: acc)
+    case NotContains(attr, value) :: tail => forFilter(tail, (attr.split("RECORD.")(1), value) :: acc)
+    case And(left, right)  :: tail => forFilter(left :: right :: tail, acc)
+    case Or(left, right) :: tail => forFilter(left :: right :: tail, acc)
+    case Xor(left, right) :: tail => forFilter(left :: right :: tail, acc)
+    case _ => acc
   }
 }

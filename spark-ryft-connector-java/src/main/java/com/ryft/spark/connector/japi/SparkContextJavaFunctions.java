@@ -46,6 +46,7 @@ import scala.Function1;
 import scala.Tuple2;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.List;
+import scala.collection.immutable.Map;
 import scala.collection.immutable.Set;
 import scala.reflect.ClassTag;
 

@@ -44,34 +44,6 @@ private [connector] object RyftQueryHelper extends Logging {
   private val OR = "OR"
   private val AND = "AND"
 
-  def keyQueryPair[RyftQuery: TypeTag](ryftQuery: RyftQuery, queryOptions: RyftQueryOptions) = {
-    val ryftQueryS =
-      ryftQuery match {
-        case sq: SimpleQuery =>
-          val queryS = s"(${queryToString(sq)})"
-          val queryEncoded = encode(queryS) + queryOptionsToString(queryOptions)
-          (sq.queries.mkString(","), queryEncoded)
-
-        case rq: RecordQuery =>
-          val queryString = queryToString(rq)
-          val files = new StringBuilder
-          queryOptions.files.foreach(f => files.append(s"&files=${encode(f)}"))
-          val fields =
-            if (queryOptions.fields.nonEmpty) s"&fields=${queryOptions.fields.mkString(",")}"
-            else ""
-          val queryEncoded = encode(queryToString(rq)) + files + "&format=xml" + fields
-          (queryString, queryEncoded)
-
-        case _ =>
-          val msg = s"Unable to convert RyftQuery to string. " +
-            s"Unrecognized RyftQuery subtype: ${typeOf[RyftQuery]}"
-          logWarning(msg)
-          throw new RyftSparkException(msg)
-      }
-
-    (ryftQueryS._1, s"/search?query=${ryftQueryS._2}")
-  }
-
   def queryToString(query: SimpleQuery): String = {
     val queries = query.queries
     val preparedQueries = new StringBuilder(s"""(${rawText.value} ${contains.value} "${queries.head}")""")
@@ -124,23 +96,14 @@ private [connector] object RyftQueryHelper extends Logging {
     case _ =>
       val msg = s"Unable to process filter: $f"
       logWarning(msg)
-      throw new RyftSparkException(msg)
+      throw RyftSparkException(msg)
   }
 
   private def isOneLayerTree(f: Filter) = f match {
     case EqualTo(attr, v) => true
     case Contains(attr, v) => true
-    //TODO: Not ??
+    case NotEqualTo(attr, v) => true
+    case NotContains(attr, v) => true
     case _ => false
   }
-
-  private def queryOptionsToString(queryOptions: RyftQueryOptions): String = {
-    val files = new StringBuilder
-    queryOptions.files.foreach(f => files.append(s"&files=${encode(f)}"))
-    s"$files" +
-      s"&surrounding=${queryOptions.surrounding}" +
-      s"&fuzziness=${queryOptions.fuzziness}"
-  }
-
-  private def encode(s: String) = java.net.URLEncoder.encode(s, "utf-8").replace("+","%20")
 }

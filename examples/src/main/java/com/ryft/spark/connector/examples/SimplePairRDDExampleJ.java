@@ -58,8 +58,7 @@ public class SimplePairRDDExampleJ {
     public static void main(String[] args) {
         final SparkConf sparkConf = new SparkConf()
                 .setAppName("SimplePairRDDExampleJ")
-                .setMaster("local[2]")
-                .set("spark.ryft.rest.url", "http://52.20.99.136:8765");
+                .setMaster("local[2]");
 
         final SparkContext sc = new SparkContext(sparkConf);
         final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
@@ -75,6 +74,6 @@ public class SimplePairRDDExampleJ {
         final Map<String,Long> countByKey = rdd.countByKey();
         final StrBuilder sb = new StrBuilder();
         countByKey.forEach((key, value) -> sb.append(key +" -> "+value+"\n"));
-        logger.info("RDD count count by key: \n{}", sb.toString());
+        logger.info("RDD count by key: \n{}", sb.toString());
     }
 }

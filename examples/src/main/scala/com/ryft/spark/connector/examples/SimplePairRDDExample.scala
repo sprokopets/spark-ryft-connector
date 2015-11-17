@@ -44,7 +44,6 @@ object SimplePairRDDExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
     .setMaster("local[2]")
-    .set("spark.ryft.rest.url", "http://52.20.99.136:9000")
 
   val sc = new SparkContext(sparkConf)
 

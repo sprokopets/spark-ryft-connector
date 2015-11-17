@@ -28,45 +28,33 @@
  * ============
  */
 
-package com.ryft.spark.connector
+package com.ryft.spark.connector.partitioner
 
-import com.ryft.spark.connector.util.FilterConverter
-import org.apache.spark.sql.sources.{Or, And, EqualTo}
-import org.junit.Test
-import org.scalatest.junit.JUnitSuite
-import org.junit.Assert._
-import com.ryft.spark.connector.query._
+import java.net.URL
 
-class FilterConverterSuite extends JUnitSuite {
+import com.ryft.spark.connector.exception.RyftSparkException
+import com.ryft.spark.connector.query.{RecordQuery, RyftQuery}
 
-  @Test def simpleFilterConversion() = {
-    val f = EqualTo("attribute", "value")
-    val rq = FilterConverter.filtersToRecordQuery(Array(f))
-    assertNotNull(rq)
-    assertNotNull(rq.filters)
-    assert(rq.filters.size == 1)
-    assertEquals(rq.filters.head, filter.EqualTo("RECORD.attribute", "value"))
+import scala.annotation.tailrec
+
+class ArrestPartitioner extends RyftPartitioner {
+  override def partitions(query: RyftQuery): Set[URL] = query match {
+    case rq: RecordQuery =>
+      partitionsAcc(rq.entries, List.empty[String]).filter(_.nonEmpty).map(new URL(_))
+    case _ =>
+      throw RyftSparkException(s"Unable to find partitions for such type of query: ${query.getClass}")
   }
 
-  @Test def simpleOrFilterConversion() = {
-    val orF = Or(EqualTo("attribute0", "value0"), EqualTo("attribute1", "value1"))
-    val rq = FilterConverter.filtersToRecordQuery(Array(orF))
-    assertNotNull(rq)
-    assertNotNull(rq.filters)
-    assert(rq.filters.size == 1)
-    val ryftOr = rq.filters.head.asInstanceOf[filter.Or]
-    assertEquals(ryftOr.left, filter.EqualTo("RECORD.attribute0", "value0"))
-    assertEquals(ryftOr.right, filter.EqualTo("RECORD.attribute1", "value1"))
+  @tailrec
+  private def partitionsAcc(entries: Set[(String,String)], acc: List[String]): Set[String] = {
+    if(entries.isEmpty) acc.toSet
+    else partitionsAcc(entries.tail, byFirsLetter(entries.head) :: acc)
   }
 
-  @Test def simpleAndFilterConversion() = {
-    val orF = And(EqualTo("attribute0", "value0"), EqualTo("attribute1", "value1"))
-    val rq = FilterConverter.filtersToRecordQuery(Array(orF))
-    assertNotNull(rq)
-    assertNotNull(rq.filters)
-    assert(rq.filters.size == 1)
-    val ryftAnd = rq.filters.head.asInstanceOf[filter.And]
-    assertEquals(ryftAnd.left, filter.EqualTo("RECORD.attribute0", "value0"))
-    assertEquals(ryftAnd.right, filter.EqualTo("RECORD.attribute1", "value1"))
+  private def byFirsLetter(entry: (String,String)) = {
+    if (entry._1.equalsIgnoreCase("arrest")) {
+      if (entry._2.equalsIgnoreCase("true")) "http://52.20.99.136:8765"
+      else "http://52.20.99.136:9000"  
+    } else ""
   }
 }

@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.immutable.HashMap;
+import scala.collection.immutable.Map;
 
 @SuppressWarnings("unchecked")
 public class StructuredRDDExampleJ {
@@ -54,23 +55,18 @@ public class StructuredRDDExampleJ {
 
     public static void main(String[] args) {
         final SparkConf sparkConf = new SparkConf()
-                .setAppName("SimplePairRDDExample")
-                .setMaster("local[2]")
-                .set("spark.locality.wait", "120s")
-                .set("spark.locality.wait.node", "120s");
-        final byte fuzziness = 0;
-        final int surrounding = 0;
+            .setAppName("SimplePairRDDExample")
+            .setMaster("local[2]")
 
         final SparkContext sc = new SparkContext(sparkConf);
         final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
 
-        final RecordQuery query =
-                RyftQueryUtil.toRecordQuery(new recordField("Date"), RelationalOperator.contains, "04/15/2015")
-                    .and(new recordField("Description"), RelationalOperator.contains, "VEHICLE");
+        final RecordQuery query = RyftQueryUtil.toRecordQuery(new recordField("Description"),
+            RelationalOperator.contains, "VEHICLE");
 
         final RyftJavaRDD<HashMap.HashTrieMap<String,String>> ryftRDDStructured =
                 javaFunctions.ryftRDDStructured(query,
-                        RyftQueryOptions.apply("*.pcrime", surrounding, fuzziness),
+                        RyftQueryOptions.apply("*.pcrime", true),
                         RyftJavaUtil.ryftQueryToEmptyList,
                         RyftJavaUtil.stringToEmptySet);
 

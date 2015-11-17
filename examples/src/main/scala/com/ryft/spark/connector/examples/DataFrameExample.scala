@@ -30,6 +30,7 @@
 
 package com.ryft.spark.connector.examples
 
+import com.ryft.spark.connector.partitioner.{ArrestPartitioner, FirstLetterPartitioner}
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, SparkConf, SparkContext}
@@ -39,7 +40,6 @@ object DataFrameExample extends App with Logging {
   val sparkConf = new SparkConf()
     .setAppName("SimplePairRDDExample")
     .setMaster("local[2]")
-    .set("spark.ryft.rest.url", "http://52.20.99.136:9000")
 
   val sc = new SparkContext(sparkConf)
   val sqlContext = new SQLContext(sc)
@@ -62,12 +62,13 @@ object DataFrameExample extends App with Logging {
     )
   ))
 
-  sqlContext.read.ryft(schema, "*.pcrime", "temp_table")
+  sqlContext.read.ryft(schema, "*.pcrime", "temp_table", classOf[ArrestPartitioner].getCanonicalName)
 
   val df = sqlContext.sql(
     """select Date, ID, Description, Arrest from temp_table
        where Description LIKE '%VEHICLE%'
           AND (Date LIKE '%04/15/2015%' OR Date LIKE '%04/14/2015%' OR Date LIKE '%04/13/2015%')
+          AND Arrest = false
        ORDER BY Date
     """)
     .collect()
