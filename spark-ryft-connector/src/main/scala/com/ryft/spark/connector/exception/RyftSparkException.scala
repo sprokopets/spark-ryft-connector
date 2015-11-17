@@ -30,4 +30,8 @@
 
 package com.ryft.spark.connector.exception
 
-case class RyftSparkException(msg: String) extends RuntimeException(msg)
+case class RyftSparkException(msg: String, exc: Throwable) extends RuntimeException(msg, exc)
+
+object RyftSparkException {
+  def apply(msg: String) = new RyftSparkException(msg, null)
+}

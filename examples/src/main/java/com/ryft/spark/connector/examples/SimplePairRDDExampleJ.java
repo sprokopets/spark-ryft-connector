@@ -75,6 +75,6 @@ public class SimplePairRDDExampleJ {
         final Map<String,Long> countByKey = rdd.countByKey();
         final StrBuilder sb = new StrBuilder();
         countByKey.forEach((key, value) -> sb.append(key +" -> "+value+"\n"));
-        logger.info("RDD count count by key: \n{}", sb.toString());
+        logger.info("RDD count by key: \n{}", sb.toString());
     }
 }

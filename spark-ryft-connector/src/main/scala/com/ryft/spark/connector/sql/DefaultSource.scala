@@ -31,6 +31,7 @@
 package com.ryft.spark.connector.sql
 
 import com.ryft.spark.connector.exception.RyftSparkException
+import com.ryft.spark.connector.partitioner.NoPartitioner
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.{SchemaRelationProvider, BaseRelation, RelationProvider}
@@ -40,11 +41,16 @@ class DefaultSource extends SchemaRelationProvider with Logging {
   override def createRelation(@transient sqlContext: SQLContext,
       parameters: Map[String, String],
       schema: StructType): BaseRelation = {
+
     val files = parameters.getOrElse("files", {
       val msg = "Required parameter files was not specified"
       logWarning(msg)
-      throw new RyftSparkException(msg)
+      throw RyftSparkException(msg)
     }).split(",").toList
+
+    val partitioner = parameters.getOrElse("partitioner", "")
+
+    sqlContext.setConf("spark.ryft.partitioner", partitioner)
 
     logInfo(s"Creating Ryft Relation: " +
       s"\nfiles: ${files.mkString(",")}" +

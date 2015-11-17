@@ -30,6 +30,8 @@
 
 package com.ryft.spark
 
+import com.ryft.spark.connector.partitioner.NoPartitioner
+import com.ryft.spark.connector.preferred.location.NoPreferredLocation
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, DataFrameReader}
@@ -48,11 +50,14 @@ package object connector {
     def ryft(schema: StructType,
         files: String,
         tempTable: String = "",
+        partitioner: String = "",
+        prefNodeLocator: String = classOf[NoPreferredLocation].getCanonicalName,
         options: Map[String,String] = Map.empty): DataFrame = {
 
       val df = reader.format("com.ryft.spark.connector.sql")
         .schema(schema)
         .option("files", files)
+        .option("partitioner", partitioner)
         .options(options)
         .load()
 

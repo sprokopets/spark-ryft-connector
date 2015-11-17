@@ -30,47 +30,17 @@
 
 package com.ryft.spark.connector.rdd
 
-import com.ryft.spark.connector.exception.RyftSparkException
-import org.apache.spark.Logging
+import java.net.URL
+
+import com.ryft.spark.connector.domain.{Search, Action, RyftQueryOptions}
+import com.ryft.spark.connector.query.RyftQuery
 
 /**
  * Represents entity to specify query to Ryft Rest service
  * and set of spark nodes preferred to use for this query.
  *
- * @param query Query to Ryft Rest service
- * @param preferredLocations Set of preferred spark nodes
  */
-case class RDDQuery(key: String,
-    query: String,
-    ryftPartitions: Set[String] = Set.empty[String],
-    preferredLocations: Set[String] = Set.empty[String]) {
-
-  lazy val ryftRestQueries = ryftPartitions.map(_ + query)
-}
-
-object RDDQuery extends Logging {
-  def apply(query: String, ryftPartitions: Set[String], preferredLocation: Set[String]) = {
-    val ryftQuery = subStringBefore(subStringAfter(query, "query="), "&files")
-    new RDDQuery(ryftQuery, query, ryftPartitions, preferredLocation)
-  }
-
-  private def subStringAfter(s:String, k:String) = {
-    s.indexOf(k) match {
-      case i => s.substring(i+k.length)
-      case _ =>
-        val msg = s"$k Does not exist in string: $s"
-        logWarning(msg)
-        throw new RyftSparkException(msg)
-    }
-  }
-
-  private def subStringBefore(s: String, k: String) = {
-    s.indexOf(k) match {
-      case i => s.substring(0, i)
-      case _ =>
-        val msg = s"$k Does not exist in string: $s"
-        logWarning(msg)
-        throw new RyftSparkException(msg)
-    }
-  }
-}
+case class RDDQuery(ryftQuery: RyftQuery,
+    queryOptions: RyftQueryOptions,
+    ryftPartitions: Set[URL],
+    action: Action = Search)

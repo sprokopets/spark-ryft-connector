@@ -30,4 +30,9 @@
 
 package com.ryft.spark.connector.query
 
-abstract class RyftQuery
+abstract class RyftQuery {
+  def key: String //FIXME: need to do it lazy
+  def values: Set[String]
+  def entries: Set[(String,String)]
+  def toRyftQuery: String
+}

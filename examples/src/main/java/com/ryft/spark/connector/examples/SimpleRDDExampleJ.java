@@ -49,7 +49,7 @@ public class SimpleRDDExampleJ {
         final SparkConf sparkConf = new SparkConf()
                 .setAppName("SimpleRDDExampleJ")
                 .setMaster("local[2]")
-                .set("spark.ryft.rest.url", "http://52.20.99.136:9000");
+                .set("spark.ryft.rest.url", "http://52.20.99.136:8765");
 
         final SparkContext sc = new SparkContext(sparkConf);
         final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
@@ -62,6 +62,6 @@ public class SimpleRDDExampleJ {
                 RyftJavaUtil.ryftQueryToEmptyList,
                 RyftJavaUtil.stringToEmptySet);
 
-        logger.info("count: {}", rdd.count());
+        logger.info("Count: {}", rdd.count());
     }
 }

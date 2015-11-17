@@ -30,7 +30,26 @@
 
 package com.ryft.spark.connector.query
 
-case class SimpleQuery(queries: List[String]) extends RyftQuery
+import com.ryft.spark.connector.domain.{contains, rawText}
+import com.ryft.spark.connector.util.RyftQueryHelper
+import org.apache.spark.Logging
+
+case class SimpleQuery(queries: List[String]) extends RyftQuery with Logging {
+  override def key: String = queries match {
+    case head :: Nil => head
+    case head :: tail :: Nil => queries.mkString("-")
+    case _  =>
+      logDebug("Quey is empty key is empty too.")
+      ""
+  }
+
+  override def values: Set[String] = queries.toSet
+
+  override def entries: Set[(String, String)] =
+    throw new UnsupportedOperationException(s"Method not supported for ${SimpleQuery.getClass.getName}")
+
+  override def toRyftQuery: String = RyftQueryHelper.queryToString(this)
+}
 
 object SimpleQuery {
   def apply(query: String) = new SimpleQuery(List(query))

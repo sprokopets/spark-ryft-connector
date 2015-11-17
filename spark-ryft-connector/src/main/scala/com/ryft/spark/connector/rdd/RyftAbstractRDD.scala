@@ -30,18 +30,17 @@
 
 package com.ryft.spark.connector.rdd
 
-import _root_.spray.json.DefaultJsonProtocol
-import _root_.spray.json.JsArray
-import _root_.spray.json.JsNumber
-import _root_.spray.json.JsObject
-import _root_.spray.json.JsString
-import com.ryft.spark.connector.domain.RyftQueryOptions
+import java.net.URL
+
+import com.ryft.spark.connector.config.ConfigHolder
+import com.ryft.spark.connector.preferred.location.{PreferredLocationsFactory, NoPreferredLocation}
+import spray.json._
+import com.ryft.spark.connector.domain.RDDCountProtocol._
+import com.ryft.spark.connector.domain.{RDDCount, Count}
 import com.ryft.spark.connector.rest.RyftRestConnection
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.{TaskContext, Partition, SparkContext}
 import org.apache.spark.rdd.RDD
-import spray.json._
-import DefaultJsonProtocol._
 
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -53,31 +52,24 @@ import scala.util.Try
  */
 abstract class RyftAbstractRDD [T: ClassTag, R](@transient sc: SparkContext,
     val rddQueries: Seq[RDDQuery],
-    val queryOptions: RyftQueryOptions)
+    @transient preferredLocations: String => Set[String])
   extends RDD[T](sc, Nil) {
+
+  //FIXME: sparkConf not serializable, for now keep request properties here
+  protected val requestProps = ConfigHolder.requestProps(sc.getConf)
 
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T]
 
   override def count(): Long = {
-    Try(ryftCount()).getOrElse{
+    Try(ryftCount).getOrElse{
       logInfo("Ryft Rest count endpoint failed. Using default spark count function")
       super.count()
     }
   }
 
-  private def ryftCount(): Long = {
-    getPartitions.map { p =>
-      //FIXME: need not to do replacing in existing query string
-      //insted of this, have to create more configurable query
-      val query = p.asInstanceOf[RyftRDDPartition].query
-        .replace("/search?", "/count?")
-      new RyftRestConnection(query).result.trim.toLong
-    }.sum
-  }
-
   override protected def getPartitions: Array[Partition] = {
-    val partitioner = new RyftRDDPartitioner
+    val partitioner = new RDDPartitioner
     val partitions = partitioner.partitions(rddQueries)
     logInfo(s"Created total ${partitions.length} partitions.")
     logInfo("Partitions: \n" + partitions.mkString("\n"))
@@ -85,12 +77,35 @@ abstract class RyftAbstractRDD [T: ClassTag, R](@transient sc: SparkContext,
   }
 
   override protected def getPreferredLocations(split: Partition): Seq[String] = {
-    val partition = split.asInstanceOf[RyftRDDPartition]
-    logDebug(("Preferred locations for partition:" +
-      "\npartitions idx: %s" +
+    logInfo("Looking for preferred locations")
+    val partition = split.asInstanceOf[RDDPartition]
+    val nodeLocator = PreferredLocationsFactory.byName(sc.getConf.get("spark.ryft.preferred.locations",
+      classOf[NoPreferredLocation].getCanonicalName))
+    val funPreferredLocations = preferredLocations(partition.ryftPartition.toString)
+
+    val locations =
+      if (funPreferredLocations.nonEmpty) funPreferredLocations
+      else nodeLocator.nodes(partition.ryftPartition).map(_.toString)
+
+    logInfo(("Preferred locations for partition:" +
+      "\npartition idx: %s" +
       "\nlocations: %s")
-      .format(partition.idx, partition.preferredLocations.mkString("\n")))
-    partition.preferredLocations.toSeq
+      .format(partition.idx, locations.mkString("\n")))
+
+    locations.toSeq
+  }
+
+  private def ryftCount: Long = {
+    getPartitions.map { p =>
+      val partition = p.asInstanceOf[RDDPartition]
+      val countRDDQuery = partition.rddQuery.copy(action = Count)
+      val connection = new RyftRestConnection(partition.ryftPartition, countRDDQuery)
+
+      //FIXME: `toLowerCase` workaround, need to find more elegant solution
+      val res = connection.result.trim.toLowerCase
+      res.parseJson
+        .convertTo[RDDCount].matches
+    }.sum
   }
 }
 
@@ -98,34 +113,33 @@ abstract class RyftAbstractRDD [T: ClassTag, R](@transient sc: SparkContext,
  * Describes `RyftRDD` partition
  *
  * @param idx Identifier of the partition, used internally by Spark
- * @param key Search query key
- * @param query Ryft REST query
- * @param preferredLocations Preferred spark workers
+ * @param ryftPartition Ryft rest URL
+ * @param rddQuery RDD query
  */
-case class RyftRDDPartition(idx: Int,
-    key: String,
-    query: String,
-    preferredLocations: Set[String])
+case class RDDPartition(idx: Int,
+    ryftPartition: URL,
+    rddQuery: RDDQuery)
   extends Partition {
   override def index: Int = idx
-  override def toString: String = JsObject(
-    Map(
+  override def toString: String = {
+    JsObject(Map(
       "idx" -> JsNumber(idx),
-      "key" -> JsString(key),
-      "query" -> JsString(query),
-      "preferredLocations" -> JsArray(preferredLocations.map(_.toJson).toVector)
+      "key" -> JsString(rddQuery.ryftQuery.key),
+      "ryftQuery" -> JsString(rddQuery.ryftQuery.toRyftQuery),
+      "ryftPartition" -> JsString(ryftPartition.toString)
     )).toJson.prettyPrint
+  }
 }
 
 /**
- * Simple `RyftRDD` partitioner to prepare partitions
+ * Simple `RyftRDD` partitioner
  */
-class RyftRDDPartitioner {
+class RDDPartitioner {
   def partitions(rddQueries: Seq[RDDQuery]): Array[Partition] = {
     var index = 0
-    (for (rddQuery <- rddQueries) yield {
-      (for (query <- rddQuery.ryftRestQueries) yield {
-        val partition = new RyftRDDPartition(index, rddQuery.key, query, rddQuery.preferredLocations)
+    (for(rddQuery <- rddQueries) yield {
+      (for (ryftPartition <- rddQuery.ryftPartitions) yield {
+        val partition = RDDPartition(index, ryftPartition, rddQuery)
         index += 1
         partition
       }).toArray[Partition]

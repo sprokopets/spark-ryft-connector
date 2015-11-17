@@ -62,7 +62,7 @@ object FilterConverter extends Logging {
     case _ =>
       val msg = s"Filter not supported by Ryft: $f"
       logWarning(msg)
-      throw new RyftSparkException(msg)
+      throw RyftSparkException(msg)
   }
 
   private def not(f: Filter): filter.Filter = f match {
@@ -73,6 +73,6 @@ object FilterConverter extends Logging {
     case _ =>
       val msg = s"Filter not supported by Ryft: $f"
       logWarning(msg)
-      throw new RyftSparkException(msg)
+      throw RyftSparkException(msg)
   }
 }
