@@ -117,7 +117,89 @@ The following options can be set via SparkConf, command line options or zeppelin
 - `spark.ryft.partitioner` - canonical class name that implements partitioning logic for data partitioning and collocation. See examples below.
 
 ## Data Partitioning and locality support
-*TBD...*
+
+If setting `spark.ryft.rest.url` set to multiple endoiints, by default search request will be done to each of the servers and results combined. If one need to override this logic to either do round-robin requests or do requests depending on query value then partitioning function or class can be specified. 
+
+The Partitioning class can be used with both RDD and DataFrame examples regarding if programming language. It is applied by loading jar file in spark context with the class that extends `com.ryft.spark.connector.partitioner.RyftPartitioner` and specifing its cannonical name via `spark.ryft.partitioner` configuration value. It can be done globally or on per query level. See [fill example](examples/src/main/scala/com/ryft/spark/connector/examples/DataFrameExample.scala) or this code snippet:
+
+```scala
+
+  sqlContext.read.ryft(schema, "*.pcrime", "temp_table", classOf[ArrestPartitioner].getCanonicalName)
+  ...
+  
+  
+  class ArrestPartitioner extends RyftPartitioner {
+  override def partitions(query: RyftQuery): Set[URL] = query match {
+    case rq: RecordQuery =>
+      partitionsAcc(rq.entries, List.empty[String]).filter(_.nonEmpty).map(new URL(_))
+    case _ =>
+      throw RyftSparkException(s"Unable to find partitions for such type of query: ${query.getClass}")
+  }
+
+  @tailrec
+  private def partitionsAcc(entries: Set[(String,String)], acc: List[String]): Set[String] = {
+    if(entries.isEmpty) acc.toSet
+    else partitionsAcc(entries.tail, byFirsLetter(entries.head) :: acc)
+  }
+
+  private def byFirsLetter(entry: (String,String)) = {
+    if (entry._1.equalsIgnoreCase("arrest")) {
+      if (entry._2.equalsIgnoreCase("true")) "http://ryftone-1:8765"
+      else "http://ryftone-2:8765"  
+    } else ""
+  }
+}
+
+```
+
+The partitioning function works for RDD requests in java and scala and can be specified as a parameter to the RDD methods. For example:
+
+
+```scala
+// If country name starts with [a-n] go to ryftone-2:8765
+// Otherwise go to ryftone-2:8765
+def byCountry(query: RyftQuery): List[String] = {
+    def byFirstLetter(country: String): List[String] = {
+        if (('a' to 'n').contains(country.head.toLower)) 
+            List("http://ryftone-1:8765")
+        else 
+            List("http://ryftone-2:8765")   
+    }
+    
+    RyftPartitioner.byField(query, byFirstLetter, Seq("country")).toList
+}
+  
+sc.ryftRDD(List(query), qoptions, byCountry)
+    .asInstanceOf[RyftRDD[Map[String, String]]].map(r=> new Record(r))
+    .toDF().cache().registerTempTable("query2")
+    
+println("query2: " + sqlc.table("query2").count)
+```
+
+In case of spark node running on ryftone box, one can use partitioning to implement collocation strategy. For example:
+
+```scala
+import java.net.URL
+
+// This query uses preferred node selection
+// All requests to ryft boxes will request execution on the corresponding node (with same ip)
+// If no nodes availble execution will fallback to other free nodes
+
+def sameNodeSelection(url: String) = {
+    val preferredNodes = Set(new URL(url).getHost)
+    println("preferred nodes: " + url + "->" + preferredNodes)
+    preferredNodes
+  }
+  
+sc.ryftRDD(List(query), qoptions, nopart, sameNodeSelection)
+    .asInstanceOf[RyftRDD[Map[String, String]]].map(r=> new Record(r))
+    .toDF().cache().registerTempTable("query3")
+    
+println("query3: " + sqlc.table("query3").count)
+```
+
+When multiple partitioning rules applied the one with most priority is used from low to high: `partition class in sparkConfig`, `partition class in query`, `partition function`.
+
 
 ##License
 Ryft-Customized BSD License
