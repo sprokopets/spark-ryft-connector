@@ -28,52 +28,20 @@
  * ============
  */
 
-package com.ryft.spark
-
-import com.ryft.spark.connector.partitioner.NoPartitioner
-import com.ryft.spark.connector.preferred.location.NoPreferredLocation
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, DataFrameReader}
-
-import scala.language.implicitConversions
+package com.ryft.spark.connector
 
 /**
-  * Providers classes to extend base spark context and rdd functionality with RyftOne specific actions.
+  * Contains classes to provide data partitioned queries and processing.
   *
   * ==Overview==
-  * To start using this conenctor, include the following code in your spark job:
-  * {{{
-  * import com.ryft.spark.connector._
-  * }}}
+  * Partitioning can be applied by implementing trait [[com.ryft.spark.connector.partitioner.RyftPartitioner]]
+  *
+  * Other classes in this package represent examples of partitioning implementation:
+  * [[com.ryft.spark.connector.partitioner.NoPartitioner]] - No partitioning rules applied.
+  * [[com.ryft.spark.connector.partitioner.SimplePartitioner]] - Partitioning rule that will always select first REST API endpoint if multiple are provided.
+  * [[com.ryft.spark.connector.partitioner.ArrestPartitioner]] - Example of partitioning rule by the value of the queried field.
+  * [[com.ryft.spark.connector.partitioner.FirstLetterPartitioner]] - Example of partitioning rule by the first letter of the queried field.
+  *
   */
-package object connector {
-  implicit def toSparkContextFunctions(sc: SparkContext): SparkContextFunctions =
-    new SparkContextFunctions(sc)
-
-  /**
-    * Adds a method, `ryft`, to DataFrameReader that allows you to read ryft files using
-    * the DataFileReader
-    */
-  implicit class RyftDataFrameReader(reader: DataFrameReader) {
-    def ryft(schema: StructType,
-             files: String,
-             tempTable: String = "",
-             partitioner: String = "",
-             prefNodeLocator: String = classOf[NoPreferredLocation].getCanonicalName,
-             options: Map[String, String] = Map.empty): DataFrame = {
-
-      val df = reader.format("com.ryft.spark.connector.sql")
-        .schema(schema)
-        .option("files", files)
-        .option("partitioner", partitioner)
-        .options(options)
-        .load()
-
-      if (tempTable.nonEmpty) df.registerTempTable(tempTable)
-
-      df
-    }
-  }
-
+package object partitioner {
 }

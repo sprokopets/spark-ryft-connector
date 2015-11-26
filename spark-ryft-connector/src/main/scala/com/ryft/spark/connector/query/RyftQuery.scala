@@ -30,6 +30,9 @@
 
 package com.ryft.spark.connector.query
 
+/**
+ * Base class for any queries to RyftOne. See Subclasses for specific implementtions.
+ */
 abstract class RyftQuery {
   def key: String //FIXME: need to do it lazy
   def values: Set[String]

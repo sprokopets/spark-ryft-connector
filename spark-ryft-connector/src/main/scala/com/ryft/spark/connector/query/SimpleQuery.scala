@@ -34,12 +34,18 @@ import com.ryft.spark.connector.domain.{contains, rawText}
 import com.ryft.spark.connector.util.RyftQueryHelper
 import org.apache.spark.Logging
 
+/**
+ * Represents RyftOne RAW_TEXT type of queries.
+ * @param queries Sequence of filters satisfying Ryft query
+ *                Filters will be applied all together:
+ *                [Filter0 AND Filter1 AND ... AND FilterN]
+ */
 case class SimpleQuery(queries: List[String]) extends RyftQuery with Logging {
   override def key: String = queries match {
     case head :: Nil => head
     case head :: tail :: Nil => queries.mkString("-")
     case _  =>
-      logDebug("Quey is empty key is empty too.")
+      logDebug("Query is empty key is empty too.")
       ""
   }
 
