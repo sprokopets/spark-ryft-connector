@@ -56,7 +56,7 @@ public class StructuredRDDExampleJ {
     public static void main(String[] args) {
         final SparkConf sparkConf = new SparkConf()
             .setAppName("SimplePairRDDExample")
-            .setMaster("local[2]")
+            .setMaster("local[2]");
 
         final SparkContext sc = new SparkContext(sparkConf);
         final SparkContextJavaFunctions javaFunctions = RyftJavaUtil.javaFunctions(sc);
