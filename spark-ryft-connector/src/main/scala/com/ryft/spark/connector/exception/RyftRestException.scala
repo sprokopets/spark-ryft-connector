@@ -30,4 +30,7 @@
 
 package com.ryft.spark.connector.exception
 
+/**
+ * Represents exceptions caused by REST API or HTTP Transport.
+ */
 case class RyftRestException(msg: String = null, exc: Throwable = null) extends Exception(msg, exc)

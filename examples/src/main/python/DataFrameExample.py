@@ -66,7 +66,10 @@ schema = StructType([
     ]))
 ])
 
-df = sqlContext.read.format("com.ryft.spark.connector.sql").schema(schema).option("files", "*.pcrime").load()
+df = sqlContext.read.format("com.ryft.spark.connector.sql").schema(schema)\
+        .option("partitioner", "com.ryft.spark.connector.partitioner.NoPartitioner") \ # Optional setting to specify custom partitioning rules
+        .option("files", "*.pcrime")\
+        .load()
 df.registerTempTable("temp_table")
 
 df = sqlContext.sql("select Date, ID, Description, Arrest from temp_table\

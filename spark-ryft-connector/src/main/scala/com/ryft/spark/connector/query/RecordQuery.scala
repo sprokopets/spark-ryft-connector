@@ -42,7 +42,7 @@ import scala.annotation.tailrec
 /**
  * Represents Ryft query to structured data
  * @param filters Sequence of filters satisfying Ryft query
- *                Filters will be applied all all together:
+ *                Filters will be applied all together:
  *                [Filter0 AND Filter1 AND ... AND FilterN]
  */
 case class RecordQuery(filters: List[Filter]) extends RyftQuery {

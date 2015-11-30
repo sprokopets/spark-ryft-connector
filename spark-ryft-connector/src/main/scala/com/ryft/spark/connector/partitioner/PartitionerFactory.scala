@@ -35,6 +35,11 @@ import org.apache.spark.Logging
 
 import scala.util.Try
 
+/**
+ * Object representing a factory to get a partitioner by its class. 
+ * Used to resolve partitioners defined by name in the configuration.
+ *
+ */
 object PartitionerFactory extends Logging {
   def byName(name: String): RyftPartitioner = {
     Try(Class.forName(name)

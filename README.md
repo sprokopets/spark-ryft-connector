@@ -120,7 +120,7 @@ The following options can be set via SparkConf, command line options or zeppelin
 
 If setting `spark.ryft.rest.url` set to multiple endoiints, by default search request will be done to each of the servers and results combined. If one need to override this logic to either do round-robin requests or do requests depending on query value then partitioning function or class can be specified. 
 
-The Partitioning class can be used with both RDD and DataFrame examples regarding if programming language. It is applied by loading jar file in spark context with the class that extends `com.ryft.spark.connector.partitioner.RyftPartitioner` and specifing its cannonical name via `spark.ryft.partitioner` configuration value. It can be done globally or on per query level. See [fill example](examples/src/main/scala/com/ryft/spark/connector/examples/DataFrameExample.scala) or this code snippet:
+The Partitioning class can be used with both RDD and DataFrame examples regarding if programming language. It is applied by loading jar file in spark context with the class that extends `com.ryft.spark.connector.partitioner.RyftPartitioner` and specifing its cannonical name via `spark.ryft.partitioner` configuration value. It can be done globally or on per query level. See [full example](examples/src/main/scala/com/ryft/spark/connector/examples/DataFrameExample.scala) or this code snippet:
 
 ```scala
 

@@ -28,52 +28,37 @@
  * ============
  */
 
-package com.ryft.spark
-
-import com.ryft.spark.connector.partitioner.NoPartitioner
-import com.ryft.spark.connector.preferred.location.NoPreferredLocation
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, DataFrameReader}
-
-import scala.language.implicitConversions
+package com.ryft.spark.connector
 
 /**
-  * Providers classes to extend base spark context and rdd functionality with RyftOne specific actions.
+  * Provides classes for DataFrames and SparkSQL support.
   *
   * ==Overview==
-  * To start using this conenctor, include the following code in your spark job:
+  * These classes are not intended to be used directly
+  * but should be accessed via [[com.ryft.spark.connector.RyftDataFrameReader]]
+  *
+  * For example:
+  *
   * {{{
-  * import com.ryft.spark.connector._
+  *   import org.apache.spark.sql.SQLContext
+  *   import org.apache.spark.sql.types._
+  *   import org.apache.spark.{SparkConf, SparkContext}
+  *   import com.ryft.spark.connector._
+  *
+  *   // Definition for the DataFrame setup
+  *   val schema = StructType(Seq(
+  *   StructField("Arrest", BooleanType), StructField("Beat", IntegerType),
+  *   StructField("Block", StringType), StructField("CaseNumber", StringType),
+  *   StructField("_index", StructType(Seq(
+  *     StructField("file", StringType), StructField("offset", StringType),
+  *     StructField("length", IntegerType), StructField("fuzziness", ByteType)))
+  *    )
+  *   ))
+  *
+  *   sqlContext.read.ryft(schema, "*.crimestat", "crime_table")
+  *
   * }}}
+  *
   */
-package object connector {
-  implicit def toSparkContextFunctions(sc: SparkContext): SparkContextFunctions =
-    new SparkContextFunctions(sc)
-
-  /**
-    * Adds a method, `ryft`, to DataFrameReader that allows you to read ryft files using
-    * the DataFileReader
-    */
-  implicit class RyftDataFrameReader(reader: DataFrameReader) {
-    def ryft(schema: StructType,
-             files: String,
-             tempTable: String = "",
-             partitioner: String = "",
-             prefNodeLocator: String = classOf[NoPreferredLocation].getCanonicalName,
-             options: Map[String, String] = Map.empty): DataFrame = {
-
-      val df = reader.format("com.ryft.spark.connector.sql")
-        .schema(schema)
-        .option("files", files)
-        .option("partitioner", partitioner)
-        .options(options)
-        .load()
-
-      if (tempTable.nonEmpty) df.registerTempTable(tempTable)
-
-      df
-    }
-  }
-
+package object sql {
 }

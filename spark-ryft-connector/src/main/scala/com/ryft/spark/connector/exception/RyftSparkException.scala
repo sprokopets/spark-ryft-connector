@@ -30,6 +30,9 @@
 
 package com.ryft.spark.connector.exception
 
+/**
+ * Represents exceptions caused by Connector code or Spark specific code.
+ */
 case class RyftSparkException(msg: String, exc: Throwable) extends RuntimeException(msg, exc)
 
 object RyftSparkException {

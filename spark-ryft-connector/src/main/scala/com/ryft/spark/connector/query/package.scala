@@ -28,52 +28,29 @@
  * ============
  */
 
-package com.ryft.spark
-
-import com.ryft.spark.connector.partitioner.NoPartitioner
-import com.ryft.spark.connector.preferred.location.NoPreferredLocation
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, DataFrameReader}
-
-import scala.language.implicitConversions
+package com.ryft.spark.connector
 
 /**
-  * Providers classes to extend base spark context and rdd functionality with RyftOne specific actions.
+  * Provides classes to represent different RyftOne queries.
   *
   * ==Overview==
-  * To start using this conenctor, include the following code in your spark job:
+  * The main class to use is [[com.ryft.spark.connector.query.RecordQuery]], as so
   * {{{
   * import com.ryft.spark.connector._
+  * import com.ryft.spark.connector.domain.{recordField, contains}
+  * import com.ryft.spark.connector.query.RecordQuery
+  *
+  * val query = RecordQuery(recordField("Date"), contains, "04/14/2015")
+  *                    .and(recordField("Arrest"), contains, "false")
+  * }}}
+  *
+  * For raw text searches [[com.ryft.spark.connector.query.SimpleQuery]] class should be used, as so
+  * {{{
+  * import com.ryft.spark.connector._
+  * import com.ryft.spark.connector.query.SimpleQuery
+  *
+  * val query = SimpleQuery("James Bond")
   * }}}
   */
-package object connector {
-  implicit def toSparkContextFunctions(sc: SparkContext): SparkContextFunctions =
-    new SparkContextFunctions(sc)
-
-  /**
-    * Adds a method, `ryft`, to DataFrameReader that allows you to read ryft files using
-    * the DataFileReader
-    */
-  implicit class RyftDataFrameReader(reader: DataFrameReader) {
-    def ryft(schema: StructType,
-             files: String,
-             tempTable: String = "",
-             partitioner: String = "",
-             prefNodeLocator: String = classOf[NoPreferredLocation].getCanonicalName,
-             options: Map[String, String] = Map.empty): DataFrame = {
-
-      val df = reader.format("com.ryft.spark.connector.sql")
-        .schema(schema)
-        .option("files", files)
-        .option("partitioner", partitioner)
-        .options(options)
-        .load()
-
-      if (tempTable.nonEmpty) df.registerTempTable(tempTable)
-
-      df
-    }
-  }
-
+package object query {
 }

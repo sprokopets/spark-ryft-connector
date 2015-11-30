@@ -28,52 +28,30 @@
  * ============
  */
 
-package com.ryft.spark
-
-import com.ryft.spark.connector.partitioner.NoPartitioner
-import com.ryft.spark.connector.preferred.location.NoPreferredLocation
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, DataFrameReader}
-
-import scala.language.implicitConversions
+package com.ryft.spark.connector.preferred
 
 /**
-  * Providers classes to extend base spark context and rdd functionality with RyftOne specific actions.
+  * Contains classes to provide preferred spark node selection when running RyftOne queries.
   *
   * ==Overview==
-  * To start using this conenctor, include the following code in your spark job:
+  * Selecting preferred location can be useful for data locality when to ensure REST api is present on the same box,
+  * rack or network. It can be applied by implementing trait [[com.ryft.spark.connector.preferred.location.PreferredLocationsHandler]], as so
+  *
   * {{{
-  * import com.ryft.spark.connector._
+  *
+  *   // Example preferred location handler that requests Spark Tasks to be assigned on same nodes
+  *   // where REST api is located based on their availability.
+  *   class NoPreferredLocation extends PreferredLocationsHandler {
+  *     override def nodes(url: URL): Set[String] = Set(new URL(url).getHost)
+  *   }
+  *
   * }}}
+  *
+  * Other classes in this package represent examples of implementation:
+  *
+  * [[com.ryft.spark.connector.preferred.location.NoPreferredLocation]] - No preferred location rules applied.
+  * Default behavior.
+  *
   */
-package object connector {
-  implicit def toSparkContextFunctions(sc: SparkContext): SparkContextFunctions =
-    new SparkContextFunctions(sc)
-
-  /**
-    * Adds a method, `ryft`, to DataFrameReader that allows you to read ryft files using
-    * the DataFileReader
-    */
-  implicit class RyftDataFrameReader(reader: DataFrameReader) {
-    def ryft(schema: StructType,
-             files: String,
-             tempTable: String = "",
-             partitioner: String = "",
-             prefNodeLocator: String = classOf[NoPreferredLocation].getCanonicalName,
-             options: Map[String, String] = Map.empty): DataFrame = {
-
-      val df = reader.format("com.ryft.spark.connector.sql")
-        .schema(schema)
-        .option("files", files)
-        .option("partitioner", partitioner)
-        .options(options)
-        .load()
-
-      if (tempTable.nonEmpty) df.registerTempTable(tempTable)
-
-      df
-    }
-  }
-
+package object location {
 }

@@ -52,7 +52,10 @@ pcrimeSchema <- structType(
     structField("YCoordinate", "integer"), structField("Year", "integer"))
 
 # Create a DataFrame using Ryft
-customDF <- read.df(sqlContext, source = "com.ryft.spark.connector.sql",schema = pcrimeSchema, files = "*.pcrime")
+customDF <- read.df(sqlContext, source = "com.ryft.spark.connector.sql", 
+                                schema = pcrimeSchema, 
+                                partitioner = "com.ryft.spark.connector.partitioner.NoPartitioner" # Optional setting to specify custom partitioning rules
+                                files = "*.pcrime")
 
 # Register this DataFrame as a table.
 registerTempTable(customDF, "pcrime")
