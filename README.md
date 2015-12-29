@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/sprokopets/spark-ryft-connector.svg?style=flat-square)](https://travis-ci.org/sprokopets/spark-ryft-connector)
+
 # Spark Ryft Connector
 
 This library lets you expose Ryft as Spark RDDs or Data Frames by consuming ryft rest api.
