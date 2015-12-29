@@ -101,7 +101,8 @@ lazy val root = (project in file(".")).
   settings(
     name                := "spark-ryft-connector-root"
   ).
-  dependsOn(sparkRyftConnector,sparkRyftConnectorJava,examples)
+  dependsOn(sparkRyftConnector,sparkRyftConnectorJava,examples).
+  aggregate(sparkRyftConnector)
 
 lazy val sparkRyftConnector = (project in file("spark-ryft-connector")).
   settings(commonSettings: _*).
