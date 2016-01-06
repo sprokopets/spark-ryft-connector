@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/sprokopets/spark-ryft-connector.svg?style=flat-square)](https://travis-ci.org/sprokopets/spark-ryft-connector)
-
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.ryft/spark-ryft-connector_2.10/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.ryft/spark-ryft-connector_2.10)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.ryft/spark-ryft-connector_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.ryft/spark-ryft-connector_2.11)
 # Spark Ryft Connector
 
 This library lets you expose Ryft as Spark RDDs or Data Frames by consuming ryft rest api.
