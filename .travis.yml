@@ -26,5 +26,5 @@ deploy:
     secure: pGietVZKJFvelJQYfFYuGJy+/jhvx0zKBVjCy9qHF2kPa0xjeMbW02vefTYwCBbx5cYcA3FiSpAHJzWI7l/9GwyXnAzW6b4Z53iUzpYmnoJ+JPCi2f8MOOqy4ZxDc8rvp8ht/Bette2z7QEicT29s284Z7f8uWAlRxJwFAsLIZvpxl3Cy072Kfi0EEPj3yEivll2ql2hJNeMLx9huBczv703NaIKZTENvpIAaLp2AH2SlaDsQJ7BQUZHxKbCH+G4W207l37gjpLWj7jZ6lGY8Tmio7TZJwTdxYjFTPUCQNNswdx8NF9vfBH0t4jqGI5r4H0f2AkmcO/DPn91rKuYZJDSqTOr+nQgryYlaNAbRv0sqGI4K00cXHlYcN7sYcRsEqkBIMQDiORfksuwiDPmVO/0WyJVIFL6IH+h+3lnM06Krb2rIXdTXcu3EgxZWRRyRnKqb/PqL5E7Mf05KFHDmMgiDABtkDCYc7PLd5oRnzmLXSB9nDmEDTTkss+7sbQ99C8jDxPFvTdkTU+sbNdaCOiKQCblWCpRW5yv8PQHY5xOKnfUS+wjYT3ZdLkuwmgxYhLMSyiks8/GJkCYjH53S1nR+zWGIFJMOwQskieX1KFgWjpA6bHlV3w/CCHMdXvIdkoU71QgUPHB5UYkqX/NrMfpulEyFDOe9+NqEMYaRsM=
   on:
     repo: sprokopets/spark-ryft-connector
-    condition: "$TRAVIS_BRANCH" == "development"
+    condition: "$TRAVIS_BRANCH=development"
     tags: true
