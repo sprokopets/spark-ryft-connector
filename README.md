@@ -203,6 +203,15 @@ println("query3: " + sqlc.table("query3").count)
 
 When multiple partitioning rules applied the one with most priority is used from low to high: `partition class in sparkConfig`, `partition class in query`, `partition function`.
 
+##Continuous Integration and Publishing
+
+Continuous integration and deployment are managed with [Travis CI](https://travis-ci.org/sprokopets/spark-ryft-connector) service.
+As soon as a commit is pushed to the repository on Github, a continuous integration cycle is launched:
+- automatic building for Pull Requests and commits;
+- automatic tests execution for Pull Requests and commits;
+- building and testing project against multiple Scala versions: 2.10.5 and 2.11.7;
+- notifying about build results;
+- (if build is successful and commit is pushed to master branch with tag) uploading assets to Maven Central and Github Releases repositories;
 
 ##License
 Ryft-Customized BSD License
