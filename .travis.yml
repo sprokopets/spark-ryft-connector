@@ -14,6 +14,15 @@ jdk:
 notifications:
   email: false
 
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION test
+  # Workaround to retrieve git branch name since for tagged commits $TRAVIS_BRANCH contains tag name instead of branch name.
+  # More details on the issue: https://github.com/travis-ci/travis-ci/issues/4745
+  - git fetch origin +refs/heads/*:refs/heads/*
+  - export GIT_BRANCH_NAME=$(git name-rev --name-only HEAD)
+  - printenv
+  - test "$TRAVIS_PULL_REQUEST" == "false" && test "$GIT_BRANCH_NAME" == "development" && test "$TRAVIS_TAG" != "" && sbt +publishLocal
+
 before_deploy:
   - sbt ++$TRAVIS_SCALA_VERSION assembly
   - printenv
@@ -29,11 +38,3 @@ deploy:
     repo: sprokopets/spark-ryft-connector
     branch: master
     tags: true
-
-# Workaround to retrieve git branch name since for tagged commits $TRAVIS_BRANCH contains tag name instead of branch name.
-# More details on the issue: https://github.com/travis-ci/travis-ci/issues/4745
-after_success:
-  - git fetch origin +refs/heads/*:refs/heads/*
-  - export GIT_BRANCH_NAME=$(git name-rev --name-only HEAD)
-  - printenv
-  - test "$TRAVIS_PULL_REQUEST" == "false" && test "$GIT_BRANCH_NAME" == "development" && test "$TRAVIS_TAG" != "" && sbt ++$TRAVIS_SCALA_VERSION publishLocal
