@@ -36,4 +36,4 @@ after_success:
   - git fetch origin +refs/heads/*:refs/heads/*
   - export GIT_BRANCH_NAME=$(git name-rev --name-only HEAD)
   - printenv
-  - test "$TRAVIS_PULL_REQUEST" == "false" && test "$GIT_BRANCH_NAME" == "development" && test "$TRAVIS_TAG" != "" && sbt publishLocal
+  - test "$TRAVIS_PULL_REQUEST" == "false" && test "$GIT_BRANCH_NAME" == "development" && test "$TRAVIS_TAG" != "" && sbt ++$TRAVIS_SCALA_VERSION publishLocal
