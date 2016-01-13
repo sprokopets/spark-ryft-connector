@@ -16,6 +16,7 @@ notifications:
 
 before_deploy:
   - sbt ++$TRAVIS_SCALA_VERSION assembly
+  - printenv
 
 deploy:
   provider: releases
@@ -28,3 +29,7 @@ deploy:
     repo: sprokopets/spark-ryft-connector
     branch: master
     tags: true
+
+after_success:
+  - printenv
+  - test "$TRAVIS_PULL_REQUEST" == "false" && test "$TRAVIS_BRANCH" == "development" && test "$TRAVIS_TAG" != "" && sbt publishLocal
