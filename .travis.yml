@@ -15,8 +15,7 @@ notifications:
   email: false
 
 before_install:
-  - export GIT_BRANCH_NAME=$TRAVIS_BRANCH
-  - printenv
+  - export GIT_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 
 before_deploy:
   - sbt ++$TRAVIS_SCALA_VERSION assembly
