@@ -14,9 +14,6 @@ jdk:
 notifications:
   email: false
 
-before_install:
-  - export GIT_BRANCH_NAME=$(git branch | sed -n '/\* /s///p')
-
 before_deploy:
   - sbt ++$TRAVIS_SCALA_VERSION assembly
   - printenv
@@ -34,5 +31,6 @@ deploy:
     tags: true
 
 after_success:
+  - export GIT_BRANCH_NAME=$(git branch | sed -n '/\* /s///p')
   - printenv
   - test "$TRAVIS_PULL_REQUEST" == "false" && test "$GIT_BRANCH_NAME" == "development" && test "$TRAVIS_TAG" != "" && sbt publishLocal
