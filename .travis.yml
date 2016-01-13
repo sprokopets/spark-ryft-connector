@@ -21,7 +21,7 @@ script:
   # More details on the issue: https://github.com/travis-ci/travis-ci/issues/4745
   - git fetch origin +refs/heads/*:refs/heads/*
   - export GIT_BRANCH_NAME=$(git name-rev --name-only HEAD)
-  - if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ "$GIT_BRANCH_NAME" == "development" ] && [ "$TRAVIS_TAG" != "" ]; then sbt +publishLocal; fi
+  - if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ "$GIT_BRANCH_NAME" == "development" ] && [ "$TRAVIS_TAG" != "" ]; then sbt ++$TRAVIS_SCALA_VERSION publishLocal; fi
 
 before_deploy:
   - sbt ++$TRAVIS_SCALA_VERSION assembly
